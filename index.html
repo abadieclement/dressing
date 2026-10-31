@@ -265,6 +265,9 @@ body.selecting .fab, body.again-on .fab { display: none; }
 .vwrap { position: relative; }
 .rotov { position: absolute; right: 8px; bottom: 8px; width: 44px; height: 44px; border-radius: 13px; border: 0; background: rgba(0, 0, 0, .62); color: #fff; font-size: 24px; line-height: 1; display: grid; place-items: center; padding: 0; }
 .rotov[hidden] { display: none; }
+.rotov.camov { right: auto; left: 8px; }
+.rotov .ic { width: 22px; height: 22px; }
+.view.none { cursor: pointer; }
 .pair .row-btns #btnLabX { flex: 1 1 100%; }
 .pair .row-btns #btnLabX[hidden] { display: none; }
 .zoom { position: fixed; inset: 0; z-index: 90; background: rgba(5, 8, 14, .94); display: grid; place-items: center; padding: 12px; }
@@ -817,18 +820,18 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       <div class="pair">
         <div class="photobox">
           <span class="cap">La pièce</span>
-          <div class="vwrap"><div class="view" id="fView"></div><button class="rotov" id="btnRotP" type="button" aria-label="Tourner la photo de la pièce" hidden>&#8635;</button></div>
+          <div class="vwrap"><div class="view" id="fView"></div><button class="rotov camov" id="btnCamP" type="button" aria-label="Remplacer la photo de la pièce" hidden><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg></button><button class="rotov" id="btnRotP" type="button" aria-label="Tourner la photo de la pièce" hidden>&#8635;</button></div>
           <div class="row-btns">
-            <button class="btn small" id="btnShootItem" type="button"><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Nouvelle photo</button>
+            <button class="btn small" id="btnShootItem" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Nouvelle photo</button>
             <button class="btn small" id="btnCut" type="button" hidden>Détourer</button>
             <button class="btn small" id="btnPhoto" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>Galerie</button>
           </div>
         </div>
         <div class="photobox">
           <span class="cap">L'étiquette</span>
-          <div class="vwrap"><div class="view" id="fView2"></div><button class="rotov" id="btnRotL" type="button" aria-label="Tourner la photo de l'étiquette" hidden>&#8635;</button></div>
+          <div class="vwrap"><div class="view" id="fView2"></div><button class="rotov camov" id="btnCamL" type="button" aria-label="Remplacer la photo de l'étiquette" hidden><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg></button><button class="rotov" id="btnRotL" type="button" aria-label="Tourner la photo de l'étiquette" hidden>&#8635;</button></div>
           <div class="row-btns">
-            <button class="btn small" id="btnShootLab" type="button"><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Nouvelle photo</button>
+            <button class="btn small" id="btnShootLab" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Nouvelle photo</button>
             <button class="btn small" id="btnLab" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>Galerie</button>
             <button class="btn small" id="btnLabX" type="button" hidden>Retirer</button>
           </div>
@@ -1769,10 +1772,10 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
   }
   function renderPhoto() {
     var s = ed.preview || srcOf(ed), s2 = ed.preview2 || srcOf2(ed);
-    $("#btnRotP").hidden = !s; $("#btnRotL").hidden = !s2;
-    $("#fView").innerHTML = s ? '<img src="' + esc(s) + '" alt="Photo de la pièce">' : "Aucune photo";
+    $("#btnRotP").hidden = !s; $("#btnRotL").hidden = !s2; $("#btnCamP").hidden = !s; $("#btnCamL").hidden = !s2;
+    $("#fView").innerHTML = s ? '<img src="' + esc(s) + '" alt="Photo de la pièce">' : "Touche pour photographier la pièce";
     $("#fView").classList.toggle("none", !s);
-    $("#fView2").innerHTML = s2 ? '<img src="' + esc(s2) + '" alt="Photo de l\'étiquette">' : "Pas d'étiquette. Marque, taille et composition, de près.";
+    $("#fView2").innerHTML = s2 ? '<img src="' + esc(s2) + '" alt="Photo de l\'étiquette">' : "Touche pour photographier l'étiquette, de près.";
     $("#fView2").classList.toggle("none", !s2);
     $("#btnLabX").hidden = !s2;
     $("#btnAi").hidden = !(imgAI && (s || s2));
@@ -3628,7 +3631,10 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
   function closeZoom() { $("#zoom").hidden = true; $("#zoom").querySelector("img").removeAttribute("src"); }
   $("#zoom").addEventListener("click", closeZoom);
   $("#fView").addEventListener("click", function (e) { var im = e.target.closest("img"); if (im) openZoom(im.src); });
-  $("#fView2").addEventListener("click", function (e) { var im = e.target.closest("img"); if (im) openZoom(im.src); });
+  $("#fView2").addEventListener("click", function (e) { var im = e.target.closest("img"); if (im) openZoom(im.src); else if ($("#fView2").classList.contains("none")) $("#fileLabCam").click(); });
+  $("#fView").addEventListener("click", function () { if ($("#fView").classList.contains("none")) $("#filePhotoCam").click(); });
+  $("#btnCamP").addEventListener("click", function () { $("#filePhotoCam").click(); });
+  $("#btnCamL").addEventListener("click", function () { $("#fileLabCam").click(); });
   $("#btnDelete").addEventListener("click", function () {
     if (!ed) return;
     if (!ed.confirmDel) {
