@@ -260,8 +260,10 @@ body.selecting .fab, body.again-on .fab { display: none; }
 .pair .photobox .view { height: 220px; cursor: zoom-in; }
 .pair .photobox .view.none { cursor: default; text-align: center; padding: 0 10px; font-size: 13px; }
 .pair .cap { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
-.pair .row-btns .btn { flex: 1 1 0; min-width: 0; padding: 0 6px; gap: 6px; }
-.pair .row-btns #btnLabX { flex-basis: 100%; }
+.pair .row-btns .btn { flex: 1 1 100%; min-width: 0; padding: 0 6px; gap: 6px; white-space: nowrap; }
+.pair .row-btns #btnRotP[hidden], .pair .row-btns #btnRotL[hidden] { display: none; }
+.pair .row-btns #btnLabX { flex: 1 1 100%; }
+.pair .row-btns #btnLabX[hidden] { display: none; }
 .zoom { position: fixed; inset: 0; z-index: 90; background: rgba(5, 8, 14, .94); display: grid; place-items: center; padding: 12px; }
 .zoom[hidden] { display: none; }
 .zoom img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; }
@@ -401,7 +403,9 @@ body.selecting .fab, body.again-on .fab { display: none; }
 .field input, .field select, .field textarea { width: 100%; min-height: 50px; padding: 9px 14px; border: 1.5px solid var(--line); background: var(--bg); border-radius: 14px; }
 .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .field textarea { min-height: 96px; resize: vertical; }
-.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.two .field input, .two .field select { padding-left: 10px; padding-right: 10px; }
+.field input[type="date"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; text-align: left; }
 .inline { display: flex; gap: 8px; }
 .inline input { flex: 1 1 auto; min-width: 0; }
 .hint { font-size: 13px; color: var(--muted); margin: 0; }
@@ -813,7 +817,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
           <div class="row-btns">
             <button class="btn small" id="btnShootItem" type="button"><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Photo</button>
             <button class="btn small" id="btnPhoto" type="button"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>Galerie</button>
-            <button class="btn small" id="btnRotP" type="button" aria-label="Tourner la photo de la pièce" hidden>&#8635;</button>
+            <button class="btn small" id="btnRotP" type="button" aria-label="Tourner la photo de la pièce" hidden>&#8635; Tourner</button>
           </div>
         </div>
         <div class="photobox">
@@ -822,7 +826,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
           <div class="row-btns">
             <button class="btn small" id="btnShootLab" type="button"><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Photo</button>
             <button class="btn small" id="btnLab" type="button"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>Galerie</button>
-            <button class="btn small" id="btnRotL" type="button" aria-label="Tourner la photo de l'étiquette" hidden>&#8635;</button>
+            <button class="btn small" id="btnRotL" type="button" aria-label="Tourner la photo de l'étiquette" hidden>&#8635; Tourner</button>
             <button class="btn small" id="btnLabX" type="button" hidden>Retirer</button>
           </div>
         </div>
