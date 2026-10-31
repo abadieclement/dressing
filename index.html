@@ -1309,6 +1309,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
             if (!(e && e.code === "cancelled") && aiStops(e)) { aiOk = false; aiNote = aiMsg(e); }
           }
         }
+        if (p.fields.photo) queueCut(ref.id, p.fields.photo, p.blob);
       } catch (e) { fail++; }
       if (ref) inflight.delete(ref.id);
       done++;
@@ -1521,7 +1522,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     st.innerHTML = "";
     var showWear = !!W.first;
     grid.innerHTML = list.map(function (it) {
-      var s = srcOf(it), busy = inflight.has(it.id), live = isLive(it);
+      var s = srcOf(it), busy = inflight.has(it.id) || cutting.has(it.id), live = isLive(it);
       var dots = it.colors.slice(0, 3).map(function (c) { return '<i style="' + esc(swatchBg(c)) + '"></i>'; }).join("");
       var nm = it.name || "Sans nom";
       var pill = "";
@@ -1576,6 +1577,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       ["add", "image", "Importer des photos", "Depuis ta galerie, plusieurs d'un coup.", off || importing],
       ["manual", "pencil", "Créer une fiche à la main", "Sans photo, ou pour une pièce d'une marque précise.", off],
       ["wish", "tag", "Ajouter à la wishlist", "Une pièce vue en magasin que tu ne prends pas tout de suite. Hors stock, hors valeur.", off],
+      ["autocut", "image", "Détourage automatique : " + (autoCutOn() ? "activé" : "désactivé"), "Les nouvelles photos sont détourées en arrière-plan (50 Mo à la première fois).", off],
       ["bag", "box", "Faire un sac", "Sélectionne des pièces à descendre à la cave.", off || !items.length],
       ["places", "pin", "Lieux et sacs", "Ce qui est à la maison, ce qui est rangé ailleurs.", off || !items.length]
     ];
@@ -1591,6 +1593,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       else if (a === "add") $("#file").click();
       else if (a === "manual") openSheet(null);
       else if (a === "wish") openWish();
+      else if (a === "autocut") { LS.set("dressing.autocut", !autoCutOn()); toast("Détourage automatique " + (autoCutOn() ? "activé." : "désactivé.")); }
       else if (a === "bag") startBag();
       else if (a === "places") openPlaces();
     };
@@ -2836,6 +2839,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       } catch (e) { /* la fiche reste, à compléter à la main */ }
     }
     inflight.delete(ref.id);
+    if (p.fields.photo) queueCut(ref.id, p.fields.photo, p.blob);
     renderAll();
     toast("Dans ta wishlist.");
     return true;
@@ -3522,6 +3526,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
         if (!(e && e.code === "cancelled") && aiStops(e)) { duo.aiOff = true; duo.aiNote = aiMsg(e); }
       }
       inflight.delete(id);
+      queueCut(id, main.r.fields.photo, main.r.blob);
       renderDuo(); renderGrid(); renderHero();
     });
   }
@@ -3819,6 +3824,48 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     }
     cutBusy = false;
     toast(ok ? plural(ok, "pièce") + " détourée" + (ok > 1 ? "s" : "") + "." + (fail ? " " + fail + " en échec." : "") : cutMsg(null));
+  }
+  // ---------- Détourage automatique des nouvelles photos ----------
+  var cutting = new Set(), autoCut = { q: [], run: false, fails: 0, warned: false };
+  function autoCutOn() { return LS.get("dressing.autocut") !== false; }
+  function queueCut(id, photoId, blob) {
+    if (!autoCutOn() || !assets || !itemsCol || !photoId || !blob || autoCut.fails >= 2) return;
+    autoCut.q.push({ id: id, photo: photoId, blob: blob });
+    cutting.add(id);
+    renderGrid();
+    runAutoCut();
+  }
+  async function runAutoCut() {
+    if (autoCut.run) return;
+    autoCut.run = true;
+    while (autoCut.q.length) {
+      var j = autoCut.q.shift(), it = itemById(j.id);
+      if (!it || it.photo !== j.photo || it.cut) { cutting.delete(j.id); continue; }
+      try {
+        while (cutBusy) await new Promise(function (r) { setTimeout(r, 400); });
+        var out = await cutBlob(j.blob);
+        var cs = await storeCut(out, 0), cur = itemById(j.id);
+        if (!cur || cur.photo !== j.photo || (ed && ed.id === j.id && (ed.newBlob || ed.photo !== j.photo))) dropAsset(cs.photo);
+        else {
+          await itemsCol.doc(j.id).update({ photo: cs.photo, thumb: null, photoOrig: j.photo, cut: true, origRot: 0 });
+          if (ed && ed.id === j.id) {
+            ed.photoOrig = j.photo; ed.photo = cs.photo; ed.thumb = null; ed.cut = true; ed.origRot = 0;
+            if (ed.preview) { URL.revokeObjectURL(ed.preview); ed.preview = null; }
+            renderPhoto();
+          }
+        }
+        autoCut.fails = 0;
+      } catch (e) {
+        autoCut.fails++;
+        if (autoCut.fails >= 2) {
+          autoCut.q.forEach(function (x) { cutting.delete(x.id); }); autoCut.q = [];
+          if (!autoCut.warned) { autoCut.warned = true; toast("Détourage automatique indisponible pour l'instant. Tu peux détourer à la main depuis la fiche."); }
+        }
+      }
+      cutting.delete(j.id);
+      renderGrid();
+    }
+    autoCut.run = false;
   }
   // ---------- Estimation de la valeur de revente ----------
   var estBusy = false;
