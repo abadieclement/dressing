@@ -886,6 +886,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
           <div class="field"><label for="fValue">Revente (€)</label><input id="fValue" type="number" inputmode="decimal" step="any" min="0"></div>
         </div>
         <p class="hint" id="fValueHint" hidden></p>
+        <div class="row-btns"><button class="btn small" id="btnVinted" type="button" hidden>Préparer l'annonce Vinted</button></div>
         <div class="two">
           <div class="field"><label for="fDate">Date d'achat</label><input id="fDate" type="date"></div>
           <div class="field"><label for="fCond">État</label><select id="fCond"></select></div>
@@ -1860,6 +1861,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     $("#fNotes").value = it.notes;
     $("#fTagNew").value = "";
     $("#btnDelete").hidden = !it.id;
+    $("#btnVinted").hidden = !(it.id && sample);
     resetDelete();
     renderPhoto();
     $("#sheet").hidden = false;
@@ -3633,6 +3635,98 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     estBusy = false;
     toast(stopMsg ? (ok ? plural(ok, "pièce") + " estimée" + (ok > 1 ? "s" : "") + ". " : "") + stopMsg : plural(ok, "pièce") + " estimée" + (ok > 1 ? "s" : "") + (ok < list.length ? ". " + (list.length - ok) + " sans estimation possible." : "."));
   }
+  // ---------- Annonce Vinted ----------
+  var vintedBusy = false;
+  function vintedData() {
+    var c = ed.colors.slice(), val = numOrNull($("#fValue").value);
+    return {
+      name: $("#fName").value.trim(), kind: cap($("#fKind").value), category: ed.category || "", brand: canonBrand($("#fBrand").value), size: normSize($("#fSize").value),
+      material: $("#fMat").value.trim(), colors: c, condition: $("#fCond").value, notes: $("#fNotes").value.trim(), price: numOrNull($("#fPrice").value),
+      value: val, lo: ed.valueAi ? ed.valueLo : null, hi: ed.valueAi ? ed.valueHi : null
+    };
+  }
+  async function vintedCall(d) {
+    var rows = [
+      "Nom : " + (d.name || "non renseigné"), "Type : " + (d.kind || d.category || "non renseigné"), "Marque : " + (d.brand || "non renseignée"),
+      "Taille : " + (d.size || "non renseignée"), "Matière : " + (d.material || "non renseignée"), "Couleurs : " + (d.colors.join(", ") || "non renseignées"),
+      "État indiqué : " + (d.condition || "non renseigné"), "Notes : " + (d.notes || "aucune"), "Prix payé : " + (d.price != null ? d.price + " €" : "inconnu"),
+      "Valeur de revente estimée : " + (d.lo != null && d.hi != null ? d.lo + " à " + d.hi + " €" : d.value != null ? d.value + " €" : "inconnue")
+    ];
+    var prompt = "Tu rédiges une annonce Vinted en français pour vendre un vêtement d'occasion.\nDonnées de la pièce (n'invente rien : pas de mesures, pas de défaut, pas de marque ou de matière absente) :\n" + rows.join("\n") +
+      '\nRéponds uniquement avec un objet JSON : {"titre": "...", "description": "...", "etat": "...", "prix": 0}\n' +
+      "Règles :\n- titre : 60 caractères maximum, de la forme Marque, type, couleur, taille. Sans émoji, sans majuscules criardes.\n" +
+      "- description : 4 à 7 lignes courtes séparées par des retours à la ligne. Ce que c'est, la taille (celle de l'étiquette), la matière si connue, la couleur, l'état indiqué en termes honnêtes, puis la ligne \"Envoi soigné sous 48h.\". Sans émoji, sans hashtag, sans phrase de vendeur exagérée.\n" +
+      "- etat : exactement une valeur parmi Neuf avec étiquette, Neuf sans étiquette, Très bon état, Bon état, Satisfaisant. Neuf devient Neuf sans étiquette, Très bon devient Très bon état, Bon devient Bon état, Usé devient Satisfaisant. Si l'état n'est pas renseigné, mets Bon état.\n" +
+      "- prix : prix de vente conseillé en euros entiers, légèrement au-dessus de la valeur estimée pour laisser une marge de négociation. Sans valeur estimée, donne ton estimation d'occasion.";
+    var r = await sample.json(prompt, { modelTier: "default" });
+    var t = String(r && r.titre || "").trim().slice(0, 80), ds = String(r && r.description || "").trim(), pr = Math.round(Number(r && r.prix));
+    if (!t || !ds) throw Object.assign(new Error("empty"), { code: "invalid_json" });
+    return { titre: t, description: ds, etat: String(r.etat || "").trim(), prix: isFinite(pr) && pr > 0 && pr < 5000 ? pr : null };
+  }
+  function copyText(txt, ta) {
+    var done = function () { toast("Copié."); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(ta, done); });
+    else fallbackCopy(ta, done);
+  }
+  function fallbackCopy(ta, done) {
+    try { ta.focus(); ta.select(); ta.setSelectionRange(0, 99999); if (document.execCommand("copy")) { done(); return; } } catch (e) { /* tant pis */ }
+    toast("Copie impossible : sélectionne le texte à la main.");
+  }
+  async function vintedPhotos(cur) {
+    var list = [];
+    if (cur.cut && cur.photoOrig) {
+      var ob = await srcToBlob(srcOf({ photo: cur.photoOrig }));
+      list.push(cur.origRot ? await toJpeg(ob, 1280, 0.86, cur.origRot) : ob);
+    } else if (srcOf(cur) || cur.newBlob) list.push(cur.newBlob || await srcToBlob(srcOf(cur)));
+    if (srcOf2(cur) || cur.newBlob2) list.push(cur.newBlob2 || await srcToBlob(srcOf2(cur)));
+    for (var i = 0; i < cur.extras.length; i++) list.push(await srcToBlob(srcOfX(cur.extras[i])));
+    return list.map(function (b, i) { return new File([b], "annonce-" + (i + 1) + ".jpg", { type: b.type || "image/jpeg" }); });
+  }
+  $("#btnVinted").addEventListener("click", async function () {
+    if (!ed || !sample || vintedBusy) return;
+    var cur = ed, btn = $("#btnVinted"), d = vintedData();
+    if (!d.brand && !d.kind && !d.name) { toast("Renseigne au moins le type ou la marque."); return; }
+    vintedBusy = true; btn.disabled = true; btn.textContent = "Rédaction…";
+    var res = null;
+    try { res = await vintedCall(d); } catch (err) { toast(err && err.code ? aiMsg(err) : "Rédaction impossible. Réessaie."); }
+    vintedBusy = false; btn.disabled = false; btn.textContent = "Préparer l'annonce Vinted";
+    if (!res || ed !== cur) return;
+    var body = openDlg("Annonce Vinted");
+    body.innerHTML = '<div class="field"><label for="vTitle">Titre</label><input id="vTitle" type="text" maxlength="80"></div>' +
+      '<div class="field"><label for="vDesc">Description</label><textarea id="vDesc" rows="8"></textarea></div>' +
+      '<p class="hint" id="vMeta"></p>' +
+      '<div class="row-btns"><button class="btn small" type="button" data-v="ct">Copier le titre</button><button class="btn small" type="button" data-v="cd">Copier la description</button></div>' +
+      '<div class="row-btns"><button class="btn small" type="button" data-v="ph">Partager les photos</button><button class="btn small" type="button" data-v="sale">Marquer à vendre</button></div>' +
+      '<p class="hint">Dans Vinted : colle le titre et la description, choisis l\'état indiqué et le prix conseillé. Les photos partent par la feuille de partage, enregistre-les puis ajoute-les à l\'annonce.</p>';
+    $("#vTitle").value = res.titre; $("#vDesc").value = res.description;
+    $("#vMeta").textContent = (res.etat ? "État Vinted : " + res.etat : "") + (res.etat && res.prix ? " · " : "") + (res.prix ? "Prix conseillé : " + res.prix + " €" : "");
+    body.onclick = async function (e) {
+      var b = e.target.closest("[data-v]"); if (!b || b.disabled) return;
+      var a = b.getAttribute("data-v");
+      if (a === "ct") copyText($("#vTitle").value, $("#vTitle"));
+      else if (a === "cd") copyText($("#vDesc").value, $("#vDesc"));
+      else if (a === "ph") {
+        b.disabled = true;
+        try {
+          var files = await vintedPhotos(cur);
+          if (navigator.canShare && navigator.canShare({ files: files })) await navigator.share({ files: files });
+          else toast("Le partage de photos n'est pas disponible ici.");
+        } catch (err) { if (!(err && err.name === "AbortError")) toast("Partage impossible."); }
+        b.disabled = false;
+      } else if (a === "sale") {
+        if (ed !== cur || !cur.id) return;
+        var patch = { status: "vente" };
+        if (res.prix && ($("#fValue").value === "" || cur.valueAi)) { patch.value = res.prix; patch.valueAi = false; patch.valueLo = null; patch.valueHi = null; }
+        try {
+          await itemsCol.doc(cur.id).update(patch);
+          $("#fStatus2").value = "vente"; $("#soldBox").hidden = true;
+          if (patch.value != null) { $("#fValue").value = patch.value; cur.valueAi = false; cur.valueLo = null; cur.valueHi = null; renderValueHint(); }
+          closeDlg();
+          toast("Marquée à vendre" + (patch.value != null ? " à " + patch.value + " €" : "") + ".");
+        } catch (err) { toast("Enregistrement impossible. Réessaie."); }
+      }
+    };
+  });
   // Rotation des photos de la fiche
   async function rotMain(lab) {
     if (!ed || ed.busy) return;
