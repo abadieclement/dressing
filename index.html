@@ -568,6 +568,18 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
 .av .gm { animation: gmin .42s cubic-bezier(.2, .9, .3, 1) both; animation-delay: var(--d, 0ms); }
 @keyframes gmin { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .av .gm { animation: none; } }
+.buyshot { display: flex; gap: 14px; align-items: flex-start; }
+.buyphoto { flex: none; width: 104px; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--surface2); }
+.buyphoto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.buyshot .why { margin: 0; font-size: 15px; }
+.verdict { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 12px; color: #fff; background: #1f6f47; }
+.verdict small { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
+.verdict b { font-family: var(--font-display); font-weight: 800; font-size: 32px; letter-spacing: -0.03em; line-height: 1; }
+.verdict.v-plutot_oui { background: #46702c; }
+.verdict.v-plutot_non { background: #a85d14; }
+.verdict.v-non { background: #a8322a; }
+.look .lnks { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+.cardprev { display: block; width: 100%; height: auto; border-radius: 12px; box-shadow: var(--shadow); }
 </style>
 </head>
 <body>
@@ -609,6 +621,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     <div id="hLook"></div>
     <div id="hWx"></div>
     <div id="hTodo"></div>
+    <p class="note act" id="hBuy" hidden><span>Un achat en vue ? Photographie la pièce, je te dis si elle a sa place chez toi.</span><button class="btn small tape" type="button" data-act="buy">Je l'achète ?</button></p>
   </section>
 
   <!-- DRESSING -->
@@ -680,6 +693,26 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       <p class="hint" id="aMsg" role="status"></p>
     </div>
     <div class="outfits" id="aOut"></div>
+  </section>
+
+  <!-- ACHAT -->
+  <section class="sec" id="v-buy" hidden>
+    <header class="hd"><div><h1>Un achat ?</h1><p>Je compare avec ton dressing.</p></div><button class="btn small" type="button" data-back="home">‹ Accueil</button></header>
+    <div class="advice">
+      <h2>Je l'achète ou pas ?</h2>
+      <p class="hint">Photographie la pièce en boutique ou sur un écran. Je regarde ce que tu as déjà, ce qui irait avec, et je te donne mon avis.</p>
+      <div class="field">
+        <label for="bNote">Prix ou remarque (facultatif)</label>
+        <input id="bNote" type="text" maxlength="80" placeholder="89 €, en solde, taille M" autocomplete="off">
+      </div>
+      <div class="actions">
+        <button class="btn primary wide" id="bPick" type="button"><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Photographier la pièce</button>
+        <button class="btn" id="bStop" type="button" hidden>Arrêter</button>
+      </div>
+      <p class="hint" id="bMsg" role="status"></p>
+      <input id="bFile" type="file" accept="image/*" hidden>
+    </div>
+    <div class="outfits" id="bOut"></div>
   </section>
 
   <!-- CHANGER UNE PIÈCE -->
@@ -1236,7 +1269,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
   }
 
   // ---------- Rendu global ----------
-  var VIEWS = ["home", "closet", "brands", "journal", "advice", "swap", "stats"];
+  var VIEWS = ["home", "closet", "brands", "journal", "advice", "swap", "buy", "stats"];
   function renderAll() {
     renderHead();
     if (view === "home") renderHome();
@@ -1251,7 +1284,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
   function setView(v) {
     view = v;
     VIEWS.forEach(function (k) { $("#v-" + k).hidden = k !== v; });
-    var tv = v === "advice" || v === "swap" ? "home" : v;
+    var tv = v === "advice" || v === "swap" || v === "buy" ? "home" : v;
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
       if (b.getAttribute("data-view") === tv) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
@@ -2400,7 +2433,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       }).join("") + "</div>" +
         (t.pourquoi && !t.mod ? '<p class="why">' + esc(t.pourquoi) + "</p>" : "") + (t.manque && !t.mod ? '<p class="why miss">Il manque : ' + esc(t.manque) + "</p>" : "") +
         '<div class="acts"><button class="btn primary" type="button" data-look="wear">Porter ce look</button><button class="btn" type="button" data-look="next">Un autre</button></div>' +
-        '<button class="linkbtn" type="button" data-look="occ">Pour une occasion précise</button></div>';
+        '<div class="lnks"><button class="linkbtn" type="button" data-look="occ">Pour une occasion précise</button><button class="linkbtn" type="button" data-look="share">Partager la tenue</button></div></div>';
     } else h = '<div class="look"><span class="lab">La tenue du jour</span><p class="why">' + esc(home.msg || "Pas encore de tenue.") + '</p><div class="acts"><button class="btn primary" type="button" data-look="gen">Proposer une tenue</button></div></div>';
     setHtml(el, h);
   }
@@ -2411,6 +2444,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
   function renderHome() {
     $("#hKick").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
     renderWx(); renderLook(); renderTodo();
+    $("#hBuy").hidden = !sample || !!unavailable;
     maybeAuto();
   }
   function homeKey() { return todayStr() + "|" + (wx ? Math.round(wx.temp / 3) + (wx.pmax >= 40 ? "r" : "d") : "n"); }
@@ -2486,9 +2520,11 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       else if (l === "next") { home.idx++; if (home.idx >= home.list.length) { home.idx = 0; genHome(); } else renderLook(); }
       else if (l === "wear") { var cur = home.list[home.idx % home.list.length]; if (cur) openWear({ date: todayStr(), items: cur.items, occasion: "Tenue du jour" }); }
       else if (l === "occ") setView("advice");
+      else if (l === "share") shareLook();
       else if (l === "nowx") { home.noWx = true; renderHome(); }
       return;
     }
+    if (e.target.closest("[data-act='buy']")) { openBuy(); return; }
     if (e.target.closest("[data-act='todo']")) { gotoTodo(); return; }
     if ((t = e.target.closest(".pc"))) { openSwap(+t.getAttribute("data-pos")); return; }
     if ((t = e.target.closest(".lrow"))) openSheet(t.getAttribute("data-id"));
@@ -2527,6 +2563,194 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       }, true);
     });
   })();
+
+  // ---------- Je l'achète ou pas ? ----------
+  var buy = { ctl: null, url: "" };
+  var VERDICTS = { oui: ["Oui", "oui"], plutot_oui: ["Plutôt oui", "plutot_oui"], plutot_non: ["Plutôt non", "plutot_non"], non: ["Non", "non"] };
+  function setBuyMsg(t) { $("#bMsg").textContent = t || ""; }
+  function openBuy() {
+    $("#bNote").value = ""; $("#bOut").innerHTML = ""; setBuyMsg("");
+    $("#bPick").disabled = false; $("#bStop").hidden = true;
+    setView("buy");
+  }
+  async function runBuy(file) {
+    if (!sample) { setBuyMsg("Claude n'est pas disponible pour le moment."); return; }
+    var pool = items.filter(isLive).slice(0, 250);
+    if (pool.length < 3) { setBuyMsg("Ajoute au moins 3 pièces à ton dressing pour que je puisse comparer."); return; }
+    var blob;
+    try { blob = await toJpeg(file, 900, 0.82); } catch (e) { setBuyMsg("Cette photo est illisible. Essaie-en une autre."); return; }
+    if (buy.url) URL.revokeObjectURL(buy.url);
+    buy.url = URL.createObjectURL(blob);
+    var codes = {};
+    var lines = pool.map(function (it, i) {
+      var c = "p" + (i + 1); codes[c] = it;
+      return [c, (it.name || "sans nom") + (it.brand ? " (" + it.brand + ")" : ""), it.kind || it.category || "?", it.colors.join("/") || "?", it.material || "?", it.seasons.join("/") || "toutes",
+        "porté " + wearsOf(it) + " fois", atHome(it) ? "à la maison" : "rangé : " + it.location].join(" | ");
+    }).join("\n");
+    var note = $("#bNote").value.trim().slice(0, 120);
+    var liked = wears.filter(function (w) { return w.rating >= 4; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; }).slice(0, 8).map(function (w) {
+      var names = w.items.map(itemById).filter(Boolean).map(function (it) { return it.name || it.category; });
+      return "- " + (w.occasion || "sans occasion") + " : " + names.join(", ");
+    });
+    var prompt = "Tu es mon styliste personnel, franc et précis. Je réfléchis à acheter la pièce qui est sur la photo jointe." +
+      (note ? "\nPrécision de ma part : " + note + "." : "") + "\n\n" +
+      "Mon dressing actuel (code | nom | type | couleurs | matière | saisons | usage | lieu) :\n" + lines + "\n\n" +
+      (liked.length ? "Tenues que j'ai bien notées par le passé, pour comprendre mes goûts :\n" + liked.join("\n") + "\n\n" : "") +
+      (wx ? "Météo du moment : " + wxText() + "\n\n" : "") +
+      "Ton travail :\n" +
+      "1. Décris la pièce de la photo en quelques mots (type, couleur, style).\n" +
+      "2. Repère les doublons : les pièces de mon dressing qui font déjà le même travail (même type et couleur proche, ou même usage). Jusqu'à 3 codes, liste vide s'il n'y en a pas.\n" +
+      "3. Compose 2 ou 3 tenues complètes et différentes qui utilisent la pièce de la photo avec des pièces de mon dressing. Donne seulement les codes des pièces de mon dressing, sans la nouvelle pièce. Si tu ne trouves pas au moins 2 tenues crédibles, renvoie moins de tenues, ou aucune.\n" +
+      "4. Donne un verdict franc : \"oui\" si la pièce comble un vrai manque et s'associe à beaucoup de mes pièces ; \"plutot_oui\" ; \"plutot_non\" si c'est un doublon partiel ou si elle s'associe à peu de pièces ; \"non\" si c'est un doublon net ou si elle ne va avec rien. Des pièces du même type que je porte peu sont un argument contre l'achat.\n" +
+      "Style : direct, sans langue de bois, deux phrases au maximum pour le résumé, pas de formule de politesse.\n" +
+      "Si la photo ne montre ni vêtement ni accessoire, réponds {\"verdict\": \"aucun\", \"resume\": \"explication courte\"}.\n" +
+      "Réponds uniquement avec un objet JSON : {\"piece\": \"description courte\", \"verdict\": \"oui|plutot_oui|plutot_non|non\", \"resume\": \"deux phrases\", \"doublons\": [\"p3\"], \"tenues\": [{\"titre\": \"nom court\", \"pieces\": [\"p1\", \"p2\"]}]}";
+    buy.ctl = new AbortController();
+    var myCtl = buy.ctl;
+    $("#bPick").disabled = true; $("#bStop").hidden = false; $("#bOut").innerHTML = "";
+    setBuyMsg("Je compare avec ton dressing…");
+    try {
+      var r = await sample.json(prompt, { images: blob, modelTier: "default", signal: myCtl.signal, cache: false });
+      renderBuyOut(r, codes);
+    } catch (e) {
+      setBuyMsg(e && e.code === "cancelled" ? "Arrêté." : aiMsg(e));
+    }
+    $("#bPick").disabled = false; $("#bStop").hidden = true; buy.ctl = null;
+  }
+  function buyLi(id) {
+    var it = itemById(id); if (!it) return "";
+    return '<li><span class="mini">' + thumbImg(it) + '</span><span class="t"><small>' + esc((it.category || "Pièce") + (atHome(it) ? "" : " · " + it.location)) + "</small>" + esc(it.name || "Sans nom") + "</span></li>";
+  }
+  function renderBuyOut(r, codes) {
+    var v = r && VERDICTS[String(r.verdict)];
+    if (!v) { setBuyMsg(r && r.resume ? String(r.resume).slice(0, 240) : "Je n'ai pas reconnu de vêtement sur cette photo. Recommence avec la pièce seule, bien cadrée."); return; }
+    var dup = uniq((Array.isArray(r.doublons) ? r.doublons : []).map(function (c) { var it = codes[String(c)]; return it ? it.id : null; }).filter(Boolean)).slice(0, 3);
+    var outs = (Array.isArray(r.tenues) ? r.tenues : []).map(function (t) {
+      var its = (Array.isArray(t && t.pieces) ? t.pieces : []).map(function (c) { return codes[String(c)]; }).filter(Boolean);
+      return { titre: String((t && t.titre) || "Tenue").slice(0, 60), items: uniq(its.map(function (it) { return it.id; })) };
+    }).filter(function (t) { return t.items.length >= 2; }).slice(0, 3);
+    var newLi = '<li><span class="mini"><img src="' + buy.url + '" alt=""></span><span class="t"><small>Nouvelle pièce</small>' + esc(String(r.piece || "La pièce de la photo").slice(0, 60)) + "</span></li>";
+    var h = '<div class="outfit"><div class="verdict v-' + v[1] + '"><small>Mon avis</small><b>' + v[0] + "</b></div>" +
+      '<div class="buyshot"><span class="buyphoto"><img src="' + buy.url + '" alt="La pièce photographiée"></span><p class="why">' + esc(String(r.resume || "").slice(0, 400)) + "</p></div></div>";
+    if (dup.length) h += '<div class="outfit"><h3>Tu as déjà</h3><ul>' + dup.map(buyLi).join("") + "</ul></div>";
+    outs.forEach(function (t) { h += '<div class="outfit"><h3>' + esc(t.titre) + "</h3><ul>" + newLi + t.items.map(buyLi).join("") + "</ul></div>"; });
+    if (!outs.length) h += '<p class="note">Je ne vois pas de tenue crédible avec ton dressing actuel.</p>';
+    $("#bOut").innerHTML = h;
+    setBuyMsg("");
+  }
+  $("#bPick").addEventListener("click", function () { $("#bFile").click(); });
+  $("#bFile").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; if (f) runBuy(f); });
+  $("#bStop").addEventListener("click", function () { if (buy.ctl) buy.ctl.abort(); });
+  $("#v-buy").addEventListener("click", function (e) { if (e.target.closest("[data-back]")) setView("home"); });
+
+  // ---------- Carte de la tenue (image à partager) ----------
+  function loadBmp(src) {
+    return fetch(src).then(function (r) { if (!r.ok) throw new Error("img"); return r.blob(); }).then(function (b) { return createImageBitmap(b); });
+  }
+  function rrect(c, x, y, w, h, r) {
+    c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+  function wrapText(c, text, maxW, maxLines) {
+    var words = String(text || "").split(/\s+/).filter(Boolean), lines = [], cur = "";
+    for (var i = 0; i < words.length; i++) {
+      var t = cur ? cur + " " + words[i] : words[i];
+      if (c.measureText(t).width > maxW && cur) { lines.push(cur); cur = words[i]; } else cur = t;
+    }
+    if (cur) lines.push(cur);
+    if (lines.length > maxLines) {
+      lines = lines.slice(0, maxLines);
+      var last = lines[maxLines - 1];
+      while (last.length > 1 && c.measureText(last + "…").width > maxW) last = last.slice(0, -1);
+      lines[maxLines - 1] = last + "…";
+    }
+    return lines;
+  }
+  function fitText(c, text, maxW) {
+    var t = String(text || "");
+    if (c.measureText(t).width <= maxW) return t;
+    while (t.length > 1 && c.measureText(t + "…").width > maxW) t = t.slice(0, -1);
+    return t + "…";
+  }
+  async function makeCard(t, list) {
+    var W = 1080, H = 1350, M = 72;
+    var cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    var c = cv.getContext("2d");
+    var disp = '"Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif';
+    var body = '"Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif';
+    try { await Promise.all([document.fonts.load("800 70px " + disp), document.fonts.load("700 26px " + body), document.fonts.load("500 26px " + body)]); } catch (e) { /* polices de secours */ }
+    var PAPER = "#f3efe7", INK = "#15171f", MUTE = "#7b7568", TILE = "#e4ddcf";
+    c.fillStyle = PAPER; c.fillRect(0, 0, W, H);
+    c.fillStyle = "#f5c518"; c.fillRect(0, 0, W, 36);
+    c.fillStyle = "rgba(23, 19, 10, .7)";
+    for (var x = 0; x < W; x += 12) c.fillRect(x, x % 60 === 0 ? 14 : 22, 2, x % 60 === 0 ? 22 : 14);
+    c.textBaseline = "alphabetic";
+    c.fillStyle = MUTE; c.font = "700 24px " + body; c.textAlign = "left";
+    try { c.letterSpacing = "3px"; } catch (e) { /* facultatif */ }
+    c.fillText("LA TENUE DU JOUR", M, 104);
+    try { c.letterSpacing = "0px"; } catch (e) { /* facultatif */ }
+    if (wx) { c.textAlign = "right"; c.fillStyle = INK; c.font = "700 26px " + body; c.fillText(wx.temp + "° " + wx.kind[0], W - M, 104); c.textAlign = "left"; }
+    c.fillStyle = INK; c.font = "800 80px " + disp;
+    var tl = wrapText(c, t.titre, W - 2 * M, 2), ty = 192;
+    tl.forEach(function (l, i) { c.fillText(l, M, ty + i * 90); });
+    var dy = ty + (tl.length - 1) * 90 + 52;
+    c.fillStyle = MUTE; c.font = "500 28px " + body;
+    c.fillText(cap(new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })) + (wx ? " · " + city.name : ""), M, dy);
+    var gy = dy + 50, bottom = t.pourquoi ? 1115 : 1210;
+    var n = list.length, cols = n <= 2 ? Math.max(1, n) : n <= 4 ? 2 : 3, rows = Math.max(1, Math.ceil(n / cols)), gap = 28, lab = 72;
+    var tw = (W - 2 * M - gap * (cols - 1)) / cols;
+    var areaH = bottom - gy;
+    var th = Math.min(tw * 1.25, (areaH - rows * lab - gap * (rows - 1)) / rows);
+    var gridH = rows * (th + lab) + (rows - 1) * gap, oy = gy + Math.max(0, (areaH - gridH) / 2);
+    var bmps = await Promise.all(list.map(function (it) { var s = srcOf(it); return s ? loadBmp(s).catch(function () { return null; }) : Promise.resolve(null); }));
+    list.forEach(function (it, i) {
+      var r = Math.floor(i / cols), k = i % cols, inRow = Math.min(cols, n - r * cols);
+      var x0 = M + k * (tw + gap) + (cols - inRow) * (tw + gap) / 2, y0 = oy + r * (th + lab + gap);
+      c.save(); rrect(c, x0, y0, tw, th, 22); c.clip();
+      c.fillStyle = TILE; c.fillRect(x0, y0, tw, th);
+      var b = bmps[i];
+      if (b) {
+        var sc = Math.max(tw / b.width, th / b.height), dw = b.width * sc, dh = b.height * sc;
+        c.drawImage(b, x0 + (tw - dw) / 2, y0 + (th - dh) / 2, dw, dh);
+      } else {
+        var hx = ""; try { hx = colorHex(it) || ""; } catch (e) { hx = ""; }
+        c.fillStyle = hx || "#cfc7b6"; c.fillRect(x0, y0, tw, th);
+      }
+      c.restore();
+      c.fillStyle = INK; c.font = "700 27px " + body; c.textAlign = "left";
+      c.fillText(fitText(c, it.name || typeLabel(it), tw), x0, y0 + th + 36);
+      if (it.brand) { c.fillStyle = MUTE; c.font = "500 24px " + body; c.fillText(fitText(c, it.brand, tw), x0, y0 + th + 64); }
+    });
+    if (t.pourquoi) {
+      c.fillStyle = INK; c.font = "500 30px " + body;
+      wrapText(c, t.pourquoi, W - 2 * M, 2).forEach(function (l, i) { c.fillText(l, M, 1198 + i * 42); });
+    }
+    c.fillStyle = "#d8d1c1"; c.fillRect(M, 1268, W - 2 * M, 2);
+    c.fillStyle = INK; c.font = "800 34px " + disp; c.fillText("Dressing", M, 1322);
+    return new Promise(function (res, rej) { cv.toBlob(function (b) { b ? res(b) : rej(new Error("toBlob")); }, "image/png"); });
+  }
+  async function shareLook() {
+    var t = home.list.length ? home.list[home.idx % home.list.length] : null;
+    if (!t) return;
+    var list = t.items.map(itemById).filter(Boolean).slice(0, 6);
+    if (!list.length) return;
+    toast("Je prépare la carte…");
+    var blob;
+    try { blob = await makeCard(t, list); } catch (e) { toast("Impossible de créer l'image."); return; }
+    var url = URL.createObjectURL(blob), name = "tenue-" + todayStr() + ".png";
+    var body = openDlg("Ta tenue");
+    body.innerHTML = '<img class="cardprev" id="cImg" alt="Carte de la tenue du jour"><div class="panel-foot"><button class="btn primary" type="button" id="cShare">Partager</button><button class="btn" type="button" id="cSave">Enregistrer</button></div>';
+    var img = body.querySelector("#cImg");
+    img.onload = function () { URL.revokeObjectURL(url); };
+    img.src = url;
+    body.onclick = async function (e) {
+      if (e.target.closest("#cShare")) {
+        var file = new File([blob], name, { type: "image/png" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], title: "Ma tenue du jour" }); } catch (er) { /* partage annulé */ }
+        } else saveFile(name, blob, "Image enregistrée.");
+      } else if (e.target.closest("#cSave")) saveFile(name, blob, "Image enregistrée.");
+    };
+  }
 
   // ---------- Changer une pièce de la tenue du jour ----------
   var swap = { pos: -1, id: "", first: "" };
