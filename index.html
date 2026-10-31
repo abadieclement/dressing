@@ -885,6 +885,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
           <div class="field"><label for="fPrice">Prix d'achat (€)</label><input id="fPrice" type="number" inputmode="decimal" step="any" min="0"></div>
           <div class="field"><label for="fValue">Revente (€)</label><input id="fValue" type="number" inputmode="decimal" step="any" min="0"></div>
         </div>
+        <p class="hint" id="fValueHint" hidden></p>
         <div class="two">
           <div class="field"><label for="fDate">Date d'achat</label><input id="fDate" type="date"></div>
           <div class="field"><label for="fCond">État</label><select id="fCond"></select></div>
@@ -1078,6 +1079,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       id: id, name: d.name || "", category: d.category || "", colors: d.colors || [], material: d.material || "", seasons: d.seasons || [],
       tags: d.tags || d.styles || [], kind: d.kind || "", brand: d.brand || "", size: d.size || "", notes: d.notes || "",
       photo: d.photo || null, thumb: d.thumb || null, photo2: d.photo2 || null, thumb2: d.thumb2 || null,
+      valueAi: !!d.valueAi, valueLo: typeof d.valueLo === "number" ? d.valueLo : null, valueHi: typeof d.valueHi === "number" ? d.valueHi : null,
       cut: !!d.cut, photoOrig: d.photoOrig || null, origRot: d.origRot || 0,
       extras: (Array.isArray(d.extras) ? d.extras : []).filter(function (x) { return x && (x.photo || x.thumb); }).slice(0, 6).map(function (x) { return { k: x.k === "label" ? "label" : "piece", photo: x.photo || null, thumb: x.thumb || null }; }),
       price: typeof d.price === "number" ? d.price : null, value: typeof d.value === "number" ? d.value : null,
@@ -1196,8 +1198,21 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       seasons: pickMany(r.seasons, SEASONS, 4),
       tags: pickMany(r.tags, BASE_TAGS, 3),
       brand: String(r.brand || "").trim().slice(0, 40),
-      size: normSize(String(r.size || "").slice(0, 14))
+      size: normSize(String(r.size || "").slice(0, 14)),
+      est: estOf(r)
     };
+  }
+  function estOf(r) {
+    var lo = Math.round(Number(r && r.value_min)), hi = Math.round(Number(r && r.value_max));
+    if (!isFinite(lo) || !isFinite(hi) || hi <= 0 || lo < 0 || hi > 5000) return null;
+    if (lo > hi) { var t = lo; lo = hi; hi = t; }
+    return { lo: lo, hi: hi, mid: Math.round((lo + hi) / 2) };
+  }
+  function aiPatch(a, it) {
+    var o = {};
+    ["name", "category", "kind", "colors", "material", "seasons", "tags", "brand", "size"].forEach(function (k) { o[k] = a[k]; });
+    if (a.est && (!it || it.value == null || it.valueAi)) { o.value = a.est.mid; o.valueLo = a.est.lo; o.valueHi = a.est.hi; o.valueAi = true; }
+    return o;
   }
   function analyze(blobs, signal, kinds) {
     blobs = Array.isArray(blobs) ? blobs : [blobs];
@@ -1212,7 +1227,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       ? "Tu regardes " + (blobs.length > 1 ? blobs.length + " photos" : "une photo") + " pour un inventaire de dressing. " + list.join(". ") + ".\nLes informations d'étiquette peuvent être réparties sur plusieurs photos (la marque d'un côté, la taille et la composition de l'autre) : rassemble-les. Une photo peut être de travers : lis-la quand même.\n"
       : "Tu regardes la photo d'un vêtement, d'une paire de chaussures ou d'un accessoire pour un inventaire de dressing.\n") +
       "Réponds uniquement avec un objet JSON de cette forme :\n" +
-      '{"name": "nom court et précis en français, ex: Chemise Oxford bleu ciel", "category": "...", "kind": "...", "colors": ["..."], "material": "...", "seasons": ["..."], "tags": ["..."], "brand": "...", "size": "..."}\n' +
+      '{"name": "nom court et précis en français, ex: Chemise Oxford bleu ciel", "category": "...", "kind": "...", "colors": ["..."], "material": "...", "seasons": ["..."], "tags": ["..."], "brand": "...", "size": "...", "value_min": 0, "value_max": 0}\n' +
       "Règles :\n" +
       "- category : exactement une valeur parmi " + CATS.join(", ") + ".\n" +
       "- kind : le type précis de la pièce en un ou deux mots, en français, ex: T-shirt, Chemise, Jean, Chino, Sneakers, Doudoune, Écharpe.\n" +
@@ -1222,6 +1237,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
         : "- material : la matière la plus probable en un ou deux mots, ou \"\" si tu n'es pas sûr.\n") +
       "- seasons : les saisons où la pièce se porte, parmi " + SEASONS.join(", ") + ".\n" +
       "- tags : 0 à 3 valeurs parmi " + BASE_TAGS.join(", ") + ".\n" +
+      "- value_min et value_max : fourchette réaliste du prix de revente d'occasion en France (Vinted), en euros entiers, pour une pièce en bon état. Mets 0 et 0 si la marque et le type ne permettent pas d'estimer.\n" +
       (hasLab
         ? "- brand : la marque lue sur l'étiquette ou le logo, sinon \"\".\n- size : la taille imprimée sur l'étiquette, telle quelle et courte, ex: M, L, 42, 32/32, UK 8. S'il y a plusieurs pays, garde la taille EU ou FR. Si elle n'est pas lisible, \"\"."
         : "- brand : seulement si une marque ou un logo est lisible sur la photo, sinon \"\".\n- size : toujours \"\".");
@@ -1269,7 +1285,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
           reviewed: false, createdAt: Date.now()
         }, p.fields));
         if (aiOk && !ctl.signal.aborted) {
-          try { await ref.update(await analyze(p.blob, ctl.signal)); }
+          try { await ref.update(aiPatch(await analyze(p.blob, ctl.signal))); }
           catch (e) {
             if (!(e && e.code === "cancelled") && aiStops(e)) { aiOk = false; aiNote = aiMsg(e); }
           }
@@ -1770,6 +1786,13 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     $("#gKind").classList.toggle("need", !$("#fKind").value.trim());
     $("#gSize").classList.toggle("need", !$("#fSize").value.trim());
   }
+  function renderValueHint() {
+    var h = $("#fValueHint");
+    if (!ed || !ed.valueAi || ed.valueLo == null || ed.valueHi == null || $("#fValue").value === "") { h.hidden = true; return; }
+    h.hidden = false;
+    h.textContent = "Estimé par l'IA : " + (ed.valueLo === ed.valueHi ? ed.valueLo : ed.valueLo + " à " + ed.valueHi) + " € en occasion. Modifie le montant pour le remplacer.";
+  }
+  $("#fValue").addEventListener("input", function () { if (ed) { ed.valueAi = false; ed.valueLo = null; ed.valueHi = null; } renderValueHint(); });
   function renderPhoto() {
     var s = ed.preview || srcOf(ed), s2 = ed.preview2 || srcOf2(ed);
     $("#btnRotP").hidden = !s; $("#btnRotL").hidden = !s2; $("#btnCamP").hidden = !s; $("#btnCamL").hidden = !s2;
@@ -1813,7 +1836,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     ed = {
       id: it.id, photo: it.photo, thumb: it.thumb, preview: null, newBlob: null, oldPhoto: null,
       photo2: it.photo2, thumb2: it.thumb2, preview2: null, newBlob2: null, oldPhoto2: null, category: it.category,
-      cut: it.cut, photoOrig: it.photoOrig, origRot: it.origRot,
+      cut: it.cut, photoOrig: it.photoOrig, origRot: it.origRot, valueAi: it.valueAi, valueLo: it.valueLo, valueHi: it.valueHi,
       extras: it.extras.map(function (x) { return { k: x.k, photo: x.photo, thumb: x.thumb, preview: null }; }), dropX: [],
       colors: it.colors.slice(), seasons: it.seasons.slice(), tags: it.tags.slice(), createdAt: it.createdAt || Date.now(), reviewed: it.reviewed
     };
@@ -1825,6 +1848,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     $("#fSize").value = it.size;
     $("#fPrice").value = it.price == null ? "" : it.price;
     $("#fValue").value = it.value == null ? "" : it.value;
+    renderValueHint();
     $("#fDate").value = it.purchaseDate;
     $("#fCond").value = it.condition;
     $("#fLocIn").value = it.location;
@@ -1874,6 +1898,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     if (a.material) $("#fMat").value = a.material;
     if (a.brand && !$("#fBrand").value.trim()) $("#fBrand").value = a.brand;
     if (a.size && !$("#fSize").value.trim()) $("#fSize").value = a.size;
+    if (a.est && ($("#fValue").value === "" || ed.valueAi)) { $("#fValue").value = a.est.mid; ed.valueAi = true; ed.valueLo = a.est.lo; ed.valueHi = a.est.hi; renderValueHint(); }
     if (a.colors.length) ed.colors = a.colors;
     if (a.seasons.length) ed.seasons = a.seasons;
     if (a.tags.length) ed.tags = uniq(ed.tags.concat(a.tags));
@@ -1892,6 +1917,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       brand: canonBrand($("#fBrand").value), size: normSize($("#fSize").value), notes: $("#fNotes").value.trim(),
       photo: ed.photo, thumb: ed.thumb, photo2: ed.photo2 || null, thumb2: ed.thumb2 || null, reviewed: true,
       cut: !!ed.cut, photoOrig: ed.cut ? ed.photoOrig || null : null, origRot: ed.cut ? ed.origRot || 0 : 0,
+      valueAi: !!ed.valueAi && numOrNull($("#fValue").value) != null, valueLo: ed.valueAi ? ed.valueLo : null, valueHi: ed.valueAi ? ed.valueHi : null,
       extras: ed.extras.map(function (x) { return { k: x.k, photo: x.photo, thumb: x.thumb }; }),
       price: numOrNull($("#fPrice").value), value: numOrNull($("#fValue").value),
       purchaseDate: $("#fDate").value || "", condition: $("#fCond").value,
@@ -2946,6 +2972,8 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       '<div class="kpi"><span class="k">Valeur de revente</span><span class="v">' + money(sumValue) + '</span><span class="s">' + (noValue ? noValue + " sans estimation" : "toutes estimées") + "</span></div>" +
       '<div class="kpi"><span class="k">Déjà vendu</span><span class="v">' + money(cashed) + '</span><span class="s">' + plural(sold.length, "pièce") + "</span></div></div>";
 
+    var ec = estCounts();
+    h += '<div class="lblock"><h2>Estimation par l\'IA</h2><p class="hint">' + (ec.none ? plural(ec.none, "pièce") + " sans estimation de revente. " : "Toutes les pièces ont une valeur. ") + (ec.ai ? plural(ec.ai, "valeur") + " estimée" + (ec.ai > 1 ? "s" : "") + " par l\'IA." : "") + '</p><div class="row-btns"><button class="btn primary" type="button" data-bk="est"' + (sample && itemsCol ? "" : " disabled") + ">Lancer une estimation</button></div></div>";
     var days = W.first ? Math.max(0, Math.round((Date.now() - parseDay(W.first).getTime()) / 86400000)) : 0;
     if (!W.first) h += '<p class="note warn">Aucun port enregistré. Les listes « peu porté » ne veulent rien dire tant que tu n\'as pas noté tes tenues. Utilise l\'onglet Tenues, ou renseigne « Ports avant le suivi » sur les fiches.</p>';
     else if (days < 60) h += '<p class="note warn">Suivi des ports depuis le ' + esc(fmtDay(W.first)) + " (" + plural(days, "jour") + "). Les classements gagnent en fiabilité après environ 2 mois de tenues notées.</p>";
@@ -3258,7 +3286,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     ai = ai.slice(0, Math.max(1, Math.min(imgMax, 4)));
     duo.chain = duo.chain.then(async function () {
       try {
-        if (imgAI && !duo.aiOff) await ref.update(await analyze(ai.map(function (s) { return s.r.blob; }), undefined, ai.map(function (s) { return s.k; })));
+        if (imgAI && !duo.aiOff) await ref.update(aiPatch(await analyze(ai.map(function (s) { return s.r.blob; }), undefined, ai.map(function (s) { return s.k; }))));
       } catch (e) {
         if (!(e && e.code === "cancelled") && aiStops(e)) { duo.aiOff = true; duo.aiNote = aiMsg(e); }
       }
@@ -3553,6 +3581,58 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     cutBusy = false;
     toast(ok ? plural(ok, "pièce") + " détourée" + (ok > 1 ? "s" : "") + "." + (fail ? " " + fail + " en échec." : "") : cutMsg(null));
   }
+  // ---------- Estimation de la valeur de revente ----------
+  var estBusy = false;
+  function estLine(it, c) {
+    return [c, it.category, it.kind, it.brand || "marque inconnue", it.size ? "taille " + it.size : "", it.material, it.colors.join("/"), "état : " + (it.condition || "bon"), it.price ? "payé " + it.price + " €" : ""].filter(Boolean).join(" | ");
+  }
+  function estCounts() {
+    var live = items.filter(isLive);
+    var manual = live.filter(function (it) { return it.value != null && !it.valueAi; }).length;
+    return { none: live.filter(function (it) { return it.value == null; }).length, all: live.length - manual, manual: manual, ai: live.filter(function (it) { return it.valueAi; }).length };
+  }
+  function openEstimate() {
+    if (!sample || !itemsCol) return;
+    var c = estCounts();
+    var body = openDlg("Estimer la valeur de revente");
+    body.innerHTML = '<p>Valeur d\'occasion en France, estimée d\'après la marque, le type, la matière et l\'état. C\'est un ordre de grandeur, pas un prix de marché.</p>' +
+      '<div class="panel-foot">' +
+      '<button class="btn primary" type="button" data-est="none"' + (c.none ? "" : " disabled") + ">Pièces sans estimation (" + c.none + ")</button>" +
+      '<button class="btn" type="button" data-est="all"' + (c.all ? "" : " disabled") + ">Toutes les pièces (" + c.all + ")</button></div>" +
+      '<p class="hint">' + (c.manual ? plural(c.manual, "pièce") + " avec un montant saisi à la main " + (c.manual > 1 ? "ne sont" : "n'est") + " jamais modifiée" + (c.manual > 1 ? "s" : "") + ". " : "") + "Environ 1 centime par pièce.</p>";
+    body.onclick = function (e) {
+      var b = e.target.closest("[data-est]"); if (!b || b.disabled) return;
+      var m = b.getAttribute("data-est");
+      closeDlg();
+      estimateAll(m);
+    };
+  }
+  async function estimateAll(mode) {
+    if (estBusy || !sample || !itemsCol) return;
+    var list = items.filter(isLive).filter(function (it) { var manual = it.value != null && !it.valueAi; return !manual && (mode === "all" || it.value == null); });
+    if (!list.length) { toast("Rien à estimer."); return; }
+    estBusy = true;
+    var ok = 0, fail = 0, stopMsg = "";
+    for (var i = 0; i < list.length && !stopMsg; i += 15) {
+      var chunk = list.slice(i, i + 15), map = {};
+      toast("Estimation " + Math.min(i + 15, list.length) + " / " + list.length + "…");
+      try {
+        var lines = chunk.map(function (it, j) { var c = "p" + (j + 1); map[c] = it; return estLine(it, c); });
+        var prompt = "Tu estimes le prix de revente d'occasion (Vinted, Vestiaire Collective, en France, en euros) de vêtements et accessoires d'un dressing personnel. Pour chaque pièce, donne une fourchette réaliste min et max pour l'état indiqué. Le prix de revente dépasse rarement le prix payé. Si les informations ne permettent pas d'estimer, mets 0 et 0.\nPièces (code | catégorie | type | marque | taille | matière | couleurs | état | prix payé) :\n" + lines.join("\n") +
+          '\nRéponds uniquement avec un objet JSON : {"items": [{"code": "p1", "min": 0, "max": 0}]}. Entiers en euros, min inférieur ou égal à max, un objet par pièce.';
+        var r = await sample.json(prompt, { modelTier: "default" });
+        var arr = r && Array.isArray(r.items) ? r.items : [];
+        for (var k = 0; k < arr.length; k++) {
+          var it = map[arr[k] && arr[k].code], e = estOf({ value_min: arr[k] && arr[k].min, value_max: arr[k] && arr[k].max });
+          if (!it || !e) continue;
+          await itemsCol.doc(it.id).update({ value: e.mid, valueLo: e.lo, valueHi: e.hi, valueAi: true });
+          ok++;
+        }
+      } catch (err) { fail++; if (aiStops(err) || fail >= 3) stopMsg = err && err.code ? aiMsg(err) : "Estimation interrompue."; }
+    }
+    estBusy = false;
+    toast(stopMsg ? (ok ? plural(ok, "pièce") + " estimée" + (ok > 1 ? "s" : "") + ". " : "") + stopMsg : plural(ok, "pièce") + " estimée" + (ok > 1 ? "s" : "") + (ok < list.length ? ". " + (list.length - ok) + " sans estimation possible." : "."));
+  }
   // Rotation des photos de la fiche
   async function rotMain(lab) {
     if (!ed || ed.busy) return;
@@ -3685,6 +3765,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       else if (a === "json" && dl) exportJson();
       else if (a === "zip" && dl) exportZip();
       else if (a === "cutall") cutAll();
+      else if (a === "est") openEstimate();
       else if (a === "restore") $("#fileRestore").click();
       return;
     }
