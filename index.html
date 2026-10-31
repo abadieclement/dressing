@@ -269,6 +269,7 @@ body.selecting .fab, body.again-on .fab { display: none; }
 .pair .row-btns #btnLabX[hidden] { display: none; }
 .zoom { position: fixed; inset: 0; z-index: 90; background: rgba(5, 8, 14, .94); display: grid; place-items: center; padding: 12px; }
 .zoom[hidden] { display: none; }
+img[data-cut] { object-fit: contain !important; padding: 6%; box-sizing: border-box; }
 .zoom img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 12px; }
 .zoom .iconbtn { position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); right: 12px; }
 @media (min-width: 700px) { .pair .photobox .view { height: 280px; } }
@@ -819,6 +820,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
           <div class="vwrap"><div class="view" id="fView"></div><button class="rotov" id="btnRotP" type="button" aria-label="Tourner la photo de la pièce" hidden>&#8635;</button></div>
           <div class="row-btns">
             <button class="btn small" id="btnShootItem" type="button"><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Nouvelle photo</button>
+            <button class="btn small" id="btnCut" type="button" hidden>Détourer</button>
             <button class="btn small" id="btnPhoto" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>Galerie</button>
           </div>
         </div>
@@ -1073,6 +1075,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       id: id, name: d.name || "", category: d.category || "", colors: d.colors || [], material: d.material || "", seasons: d.seasons || [],
       tags: d.tags || d.styles || [], kind: d.kind || "", brand: d.brand || "", size: d.size || "", notes: d.notes || "",
       photo: d.photo || null, thumb: d.thumb || null, photo2: d.photo2 || null, thumb2: d.thumb2 || null,
+      cut: !!d.cut, photoOrig: d.photoOrig || null, origRot: d.origRot || 0,
       extras: (Array.isArray(d.extras) ? d.extras : []).filter(function (x) { return x && (x.photo || x.thumb); }).slice(0, 6).map(function (x) { return { k: x.k === "label" ? "label" : "piece", photo: x.photo || null, thumb: x.thumb || null }; }),
       price: typeof d.price === "number" ? d.price : null, value: typeof d.value === "number" ? d.value : null,
       purchaseDate: d.purchaseDate || "", condition: d.condition || "", status: d.status || "actif",
@@ -1106,7 +1109,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
   function hasLabel(o) { return !!(o.thumb2 || o.photo2); }
   function thumbImg(it) {
     var s = srcOf(it);
-    return s ? '<img src="' + esc(s) + '" alt="" loading="lazy">' : esc((it.category || it.name || "?").charAt(0).toUpperCase());
+    return s ? '<img' + (it.cut ? ' data-cut' : '') + ' src="' + esc(s) + '" alt="" loading="lazy">' : esc((it.category || it.name || "?").charAt(0).toUpperCase());
   }
   function allTags() { var t = []; items.forEach(function (it) { t = t.concat(it.tags); }); return uniq(t).sort(function (a, b) { return a.localeCompare(b, "fr"); }); }
   function allLocs() { return uniq(["Maison", "Cave"].concat(items.map(function (it) { return it.location; }))); }
@@ -1432,7 +1435,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     var stamp = it.size ? '<span class="stamp">' + esc(it.size) + "</span>" : '<span class="stamp miss">Taille ?</span>';
     var brand = it.brand ? '<span class="br">' + esc(it.brand) + "</span>" : '<span class="br miss">Marque ?</span>';
     return '<button class="hang" type="button" style="--k:' + (i % 7) + '" data-id="' + esc(it.id) + '"><svg class="ic hook" aria-hidden="true"><use href="#i-hook"/></svg>' +
-      '<span class="ph">' + (s ? '<img src="' + esc(s) + '" alt="" loading="lazy">' : '<span class="ph-empty">' + esc((it.category || nm).charAt(0).toUpperCase()) + "</span>") + stamp + (extra ? '<span class="now">Dans la tenue</span>' : "") + "</span>" +
+      '<span class="ph">' + (s ? '<img' + (it.cut ? ' data-cut' : '') + ' src="' + esc(s) + '" alt="" loading="lazy">' : '<span class="ph-empty">' + esc((it.category || nm).charAt(0).toUpperCase()) + "</span>") + stamp + (extra ? '<span class="now">Dans la tenue</span>' : "") + "</span>" +
       '<span class="hi">' + brand + '<span class="nm">' + esc(nm) + "</span>" + (extra ? '<span class="wn">' + esc(extra) + "</span>" : "") + "</span></button>";
   }
   function renderRails() {
@@ -1489,7 +1492,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       var stamp = it.size ? '<span class="stamp">' + esc(it.size) + "</span>" : (live && !busy ? '<span class="stamp miss">Taille ?</span>' : "");
       var brand = it.brand ? '<span class="br">' + esc(it.brand) + "</span>" : (live && !busy ? '<span class="br miss">Marque ?</span>' : "");
       return '<button class="' + cls + '" type="button" data-id="' + esc(it.id) + '">' +
-        '<span class="ph' + (busy ? " busy" : "") + '">' + (s ? '<img src="' + esc(s) + '" alt="" loading="lazy">' : '<span class="ph-empty">' + esc((it.category || nm).charAt(0).toUpperCase()) + "</span>") +
+        '<span class="ph' + (busy ? " busy" : "") + '">' + (s ? '<img' + (it.cut ? ' data-cut' : '') + ' src="' + esc(s) + '" alt="" loading="lazy">' : '<span class="ph-empty">' + esc((it.category || nm).charAt(0).toUpperCase()) + "</span>") +
         '<span class="tick">' + ic("check") + "</span>" + pill + (dots ? '<span class="dots">' + dots + "</span>" : "") + stamp + "</span>" +
         '<span class="info">' + brand + '<span class="nm">' + esc(nm) + '</span><span class="sub">' + esc(sub.join(" · ")) + "</span></span></button>";
     }).join("");
@@ -1773,6 +1776,8 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     $("#fView2").classList.toggle("none", !s2);
     $("#btnLabX").hidden = !s2;
     $("#btnAi").hidden = !(imgAI && (s || s2));
+    $("#btnCut").hidden = !(s && assets && ed.photo);
+    $("#btnCut").textContent = ed.cut ? "Remettre l'original" : "Détourer";
     renderExtras();
   }
   function renderExtras() {
@@ -1805,6 +1810,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     ed = {
       id: it.id, photo: it.photo, thumb: it.thumb, preview: null, newBlob: null, oldPhoto: null,
       photo2: it.photo2, thumb2: it.thumb2, preview2: null, newBlob2: null, oldPhoto2: null, category: it.category,
+      cut: it.cut, photoOrig: it.photoOrig, origRot: it.origRot,
       extras: it.extras.map(function (x) { return { k: x.k, photo: x.photo, thumb: x.thumb, preview: null }; }), dropX: [],
       colors: it.colors.slice(), seasons: it.seasons.slice(), tags: it.tags.slice(), createdAt: it.createdAt || Date.now(), reviewed: it.reviewed
     };
@@ -1882,6 +1888,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       material: $("#fMat").value.trim(), seasons: ed.seasons.slice(), tags: ed.tags.slice(),
       brand: canonBrand($("#fBrand").value), size: normSize($("#fSize").value), notes: $("#fNotes").value.trim(),
       photo: ed.photo, thumb: ed.thumb, photo2: ed.photo2 || null, thumb2: ed.thumb2 || null, reviewed: true,
+      cut: !!ed.cut, photoOrig: ed.cut ? ed.photoOrig || null : null, origRot: ed.cut ? ed.origRot || 0 : 0,
       extras: ed.extras.map(function (x) { return { k: x.k, photo: x.photo, thumb: x.thumb }; }),
       price: numOrNull($("#fPrice").value), value: numOrNull($("#fValue").value),
       purchaseDate: $("#fDate").value || "", condition: $("#fCond").value,
@@ -1912,6 +1919,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       await itemsCol.doc(ed.id).delete();
       dropAsset(photo); dropAsset(photo2);
       ((it && it.extras) || []).forEach(function (x) { dropAsset(x.photo); });
+      if (it && it.photoOrig) dropAsset(it.photoOrig);
       closeSheet();
       toast("Pièce supprimée.");
     } catch (e) { toast("Suppression impossible. Réessaie dans un instant."); }
@@ -2975,8 +2983,9 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       b += '<button class="btn" type="button" data-bk="csv">Tableau (CSV)</button><button class="btn" type="button" data-bk="json">Sauvegarde (JSON)</button>';
       if (window.JSZip) b += '<button class="btn" type="button" data-bk="zip">Photos (ZIP)</button>';
     }
+    b += '<button class="btn" type="button" data-bk="cutall"' + (itemsCol && assets ? "" : " disabled") + ">Détourer toutes les pièces</button>";
     b += '<button class="btn" type="button" data-bk="restore"' + (itemsCol ? "" : " disabled") + ">Restaurer une sauvegarde</button></div>";
-    b += '<p class="hint">Le CSV s\'ouvre dans Excel ou Sheets. Le JSON restaure les fiches et les tenues. Les photos s\'enregistrent à part, dans le ZIP.</p></div>';
+    b += '<p class="hint">Le CSV s\'ouvre dans Excel ou Sheets. Le JSON restaure les fiches et les tenues. Les photos s\'enregistrent à part, dans le ZIP. Le détourage tourne sur ton téléphone, une pièce après l\'autre, et chaque fiche permet de revenir à l\'original.</p></div>';
     return b;
   }
   function csvCell(v) { v = String(v == null ? "" : v); return /[;"\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
@@ -3374,7 +3383,11 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     try {
       var p = await storePhoto(f);
       if (ed !== cur) return;
-      if (cur.photo && !cur.oldPhoto && cur.photo !== p.fields.photo) cur.oldPhoto = cur.photo;
+      if (cur.cut) {
+        if (cur.photo) cur.dropX.push(cur.photo);
+        if (cur.photoOrig) cur.dropX.push(cur.photoOrig);
+        cur.cut = false; cur.photoOrig = null; cur.origRot = 0;
+      } else if (cur.photo && !cur.oldPhoto && cur.photo !== p.fields.photo) cur.oldPhoto = cur.photo;
       cur.photo = p.fields.photo; cur.thumb = p.fields.thumb; cur.newBlob = p.blob;
       if (cur.preview) URL.revokeObjectURL(cur.preview);
       cur.preview = URL.createObjectURL(p.blob);
@@ -3443,13 +3456,112 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     if (ed.preview2) { URL.revokeObjectURL(ed.preview2); ed.preview2 = null; }
     renderPhoto();
   });
+  // ---------- Détourage sur le téléphone ----------
+  var bgLib = null, cutBusy = false;
+  function bgPath() { return (self.DRESSING_CONFIG && self.DRESSING_CONFIG.bgPath) || "https://staticimgly.com/@imgly/background-removal-data/1.4.5/dist/"; }
+  function loadBg() {
+    if (!bgLib) bgLib = import("./vendor/bgremoval.js").catch(function (e) { bgLib = null; throw e; });
+    return bgLib;
+  }
+  async function cutBlob(blob, onProg) {
+    var m = await loadBg();
+    return m.removeBackground(blob, {
+      publicPath: bgPath(), model: "small", device: "cpu", output: { format: "image/png" },
+      progress: function (key, cur, total) { if (onProg && /fetch/.test(String(key)) && total) onProg(Math.min(100, Math.round(100 * cur / total))); }
+    });
+  }
+  async function toPng(blob, max, rot) {
+    var bmp = await createImageBitmap(blob);
+    rot = (((rot || 0) % 360) + 360) % 360;
+    var s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    var w = Math.max(1, Math.round(bmp.width * s)), h = Math.max(1, Math.round(bmp.height * s));
+    var swap = rot === 90 || rot === 270;
+    var c = document.createElement("canvas");
+    c.width = swap ? h : w; c.height = swap ? w : h;
+    var x = c.getContext("2d");
+    x.translate(c.width / 2, c.height / 2); x.rotate(rot * Math.PI / 180);
+    x.drawImage(bmp, -w / 2, -h / 2, w, h);
+    if (bmp.close) bmp.close();
+    return new Promise(function (res, rej) { c.toBlob(function (b) { b ? res(b) : rej(new Error("toBlob")); }, "image/png"); });
+  }
+  async function storeCut(blob, rot) {
+    var png = await toPng(blob, 900, rot);
+    var r = await assets.upload(png, { type: "image/png" });
+    return { blob: png, photo: r.id };
+  }
+  function cutMsg(e) { return "Détourage impossible" + (e && e.message && !/fetch|network/i.test(e.message) ? "" : ". Vérifie ta connexion et réessaie") + "."; }
+  $("#btnCut").addEventListener("click", async function () {
+    if (!ed || !assets || cutBusy) return;
+    var cur = ed, btn = $("#btnCut");
+    if (cur.cut) {
+      // retour à l'original
+      cutBusy = true; btn.disabled = true;
+      try {
+        if (cur.photo) cur.dropX.push(cur.photo);
+        var orig = cur.photoOrig, rot = cur.origRot || 0;
+        if (rot) {
+          var ob = await srcToBlob(srcOf({ photo: orig }));
+          var p = await storePhoto(ob, false, rot);
+          cur.dropX.push(orig);
+          cur.photo = p.fields.photo; cur.thumb = null; cur.newBlob = p.blob;
+          if (cur.preview) URL.revokeObjectURL(cur.preview);
+          cur.preview = URL.createObjectURL(p.blob);
+        } else {
+          cur.photo = orig; cur.thumb = null; cur.newBlob = null;
+          if (cur.preview) { URL.revokeObjectURL(cur.preview); cur.preview = null; }
+        }
+        cur.cut = false; cur.photoOrig = null; cur.origRot = 0;
+      } catch (err) { toast("Retour à l'original impossible. Réessaie."); }
+      cutBusy = false; btn.disabled = false;
+      if (ed === cur) renderPhoto();
+      return;
+    }
+    cutBusy = true; btn.disabled = true; btn.textContent = "Préparation…";
+    try {
+      var src = cur.newBlob || await srcToBlob(srcOf(cur));
+      var out = await cutBlob(src, function (pc) { if (ed === cur) btn.textContent = "Téléchargement du moteur " + pc + " %"; });
+      if (ed === cur) btn.textContent = "Détourage…";
+      var cs = await storeCut(out, 0);
+      if (ed !== cur) { dropAsset(cs.photo); cutBusy = false; return; }
+      cur.photoOrig = cur.photo; cur.origRot = 0; cur.cut = true;
+      cur.photo = cs.photo; cur.thumb = null; cur.newBlob = cs.blob;
+      if (cur.preview) URL.revokeObjectURL(cur.preview);
+      cur.preview = URL.createObjectURL(cs.blob);
+    } catch (err) { toast(cutMsg(err)); }
+    cutBusy = false; btn.disabled = false;
+    if (ed === cur) renderPhoto();
+  });
+  async function cutAll() {
+    if (cutBusy || !assets || !itemsCol) return;
+    var list = items.filter(function (it) { return it.photo && !it.cut && !it.thumb && !it.preview; });
+    if (!list.length) { toast("Toutes les pièces avec photo sont déjà détourées."); return; }
+    cutBusy = true;
+    var ok = 0, fail = 0;
+    for (var i = 0; i < list.length; i++) {
+      toast("Détourage " + (i + 1) + " / " + list.length + "… ne ferme pas la page.");
+      try {
+        var it = list[i];
+        var out = await cutBlob(await srcToBlob(srcOf(it)));
+        var cs = await storeCut(out, 0);
+        await itemsCol.doc(it.id).update({ photo: cs.photo, photoOrig: it.photo, cut: true, origRot: 0 });
+        ok++;
+      } catch (err) { fail++; if (fail >= 3 && !ok) break; }
+    }
+    cutBusy = false;
+    toast(ok ? plural(ok, "pièce") + " détourée" + (ok > 1 ? "s" : "") + "." + (fail ? " " + fail + " en échec." : "") : cutMsg(null));
+  }
   // Rotation des photos de la fiche
   async function rotMain(lab) {
     if (!ed || ed.busy) return;
     var cur = ed; cur.busy = true;
     try {
       var blob = lab ? (cur.newBlob2 || await srcToBlob(srcOf2(cur))) : (cur.newBlob || await srcToBlob(srcOf(cur)));
-      var p = await storePhoto(blob, lab, 90);
+      var p;
+      if (!lab && cur.cut) {
+        var cs = await storeCut(blob, 90);
+        p = { blob: cs.blob, fields: { photo: cs.photo, thumb: null } };
+        cur.origRot = ((cur.origRot || 0) + 90) % 360;
+      } else p = await storePhoto(blob, lab, 90);
       if (ed !== cur) return;
       if (lab) {
         if (cur.photo2 && !cur.oldPhoto2 && cur.photo2 !== p.fields.photo2) cur.oldPhoto2 = cur.photo2;
@@ -3566,6 +3678,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       if (a === "csv" && dl) exportCsv();
       else if (a === "json" && dl) exportJson();
       else if (a === "zip" && dl) exportZip();
+      else if (a === "cutall") cutAll();
       else if (a === "restore") $("#fileRestore").click();
       return;
     }
