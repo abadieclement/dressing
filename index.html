@@ -256,11 +256,11 @@ body.selecting .fab, body.again-on .fab { display: none; }
 .xt .xr { right: 44px; }
 .xt .xd { right: 4px; }
 @keyframes shim { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-.pair { display: grid; grid-template-columns: 1.1fr 1fr; gap: 10px; align-items: start; }
+.pair { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 10px; align-items: start; }
 .pair .photobox .view { height: 220px; cursor: zoom-in; }
 .pair .photobox .view.none { cursor: default; text-align: center; padding: 0 10px; font-size: 13px; }
 .pair .cap { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
-.pair .row-btns .btn { flex: 1 1 100%; min-width: 0; padding: 0 6px; gap: 6px; white-space: nowrap; }
+.pair .row-btns .btn { flex: 1 1 100%; min-width: 0; max-width: 100%; padding: 0 6px; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #btnXLab, #btnXPiece { flex: 1 1 0; min-width: 0; white-space: nowrap; padding: 0 8px; }
 .vwrap { position: relative; }
 .rotov { position: absolute; right: 8px; bottom: 8px; width: 44px; height: 44px; border-radius: 13px; border: 0; background: rgba(0, 0, 0, .62); color: #fff; font-size: 24px; line-height: 1; display: grid; place-items: center; padding: 0; }
@@ -3789,7 +3789,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     cutBusy = true; btn.disabled = true; btn.textContent = "Préparation…";
     try {
       var src = cur.newBlob || await srcToBlob(srcOf(cur));
-      var out = await cutBlob(src, function (pc) { if (ed === cur) btn.textContent = "Téléchargement du moteur " + pc + " %"; });
+      var out = await cutBlob(src, function (pc) { if (ed === cur) btn.textContent = "Moteur " + pc + " %"; });
       if (ed === cur) btn.textContent = "Détourage…";
       var cs = await storeCut(out, 0);
       if (ed !== cur) { dropAsset(cs.photo); cutBusy = false; return; }
