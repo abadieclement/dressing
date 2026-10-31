@@ -261,7 +261,10 @@ body.selecting .fab, body.again-on .fab { display: none; }
 .pair .photobox .view.none { cursor: default; text-align: center; padding: 0 10px; font-size: 13px; }
 .pair .cap { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .pair .row-btns .btn { flex: 1 1 100%; min-width: 0; padding: 0 6px; gap: 6px; white-space: nowrap; }
-.pair .row-btns #btnRotP[hidden], .pair .row-btns #btnRotL[hidden] { display: none; }
+#btnXLab, #btnXPiece { flex: 1 1 0; min-width: 0; white-space: nowrap; padding: 0 8px; }
+.vwrap { position: relative; }
+.rotov { position: absolute; right: 8px; bottom: 8px; width: 44px; height: 44px; border-radius: 13px; border: 0; background: rgba(0, 0, 0, .62); color: #fff; font-size: 24px; line-height: 1; display: grid; place-items: center; padding: 0; }
+.rotov[hidden] { display: none; }
 .pair .row-btns #btnLabX { flex: 1 1 100%; }
 .pair .row-btns #btnLabX[hidden] { display: none; }
 .zoom { position: fixed; inset: 0; z-index: 90; background: rgba(5, 8, 14, .94); display: grid; place-items: center; padding: 12px; }
@@ -813,26 +816,24 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       <div class="pair">
         <div class="photobox">
           <span class="cap">La pièce</span>
-          <div class="view" id="fView"></div>
+          <div class="vwrap"><div class="view" id="fView"></div><button class="rotov" id="btnRotP" type="button" aria-label="Tourner la photo de la pièce" hidden>&#8635;</button></div>
           <div class="row-btns">
-            <button class="btn small" id="btnShootItem" type="button"><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Photo</button>
-            <button class="btn small" id="btnPhoto" type="button"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>Galerie</button>
-            <button class="btn small" id="btnRotP" type="button" aria-label="Tourner la photo de la pièce" hidden>&#8635; Tourner</button>
+            <button class="btn small" id="btnShootItem" type="button"><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Nouvelle photo</button>
+            <button class="btn small" id="btnPhoto" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>Galerie</button>
           </div>
         </div>
         <div class="photobox">
           <span class="cap">L'étiquette</span>
-          <div class="view" id="fView2"></div>
+          <div class="vwrap"><div class="view" id="fView2"></div><button class="rotov" id="btnRotL" type="button" aria-label="Tourner la photo de l'étiquette" hidden>&#8635;</button></div>
           <div class="row-btns">
-            <button class="btn small" id="btnShootLab" type="button"><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Photo</button>
-            <button class="btn small" id="btnLab" type="button"><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>Galerie</button>
-            <button class="btn small" id="btnRotL" type="button" aria-label="Tourner la photo de l'étiquette" hidden>&#8635; Tourner</button>
+            <button class="btn small" id="btnShootLab" type="button"><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Nouvelle photo</button>
+            <button class="btn small" id="btnLab" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>Galerie</button>
             <button class="btn small" id="btnLabX" type="button" hidden>Retirer</button>
           </div>
         </div>
       </div>
       <div class="xtras" id="fExtras"></div>
-      <div class="row-btns"><button class="btn small" id="btnXLab" type="button">+ Autre étiquette</button><button class="btn small" id="btnXPiece" type="button">+ Autre photo de la pièce</button></div>
+      <div class="row-btns"><button class="btn small" id="btnXLab" type="button">+ Étiquette</button><button class="btn small" id="btnXPiece" type="button">+ Photo de la pièce</button></div>
       <div class="row-btns"><button class="btn small primary" id="btnAi" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-tag"/></svg>Remplir depuis les photos</button></div>
 
       <div class="field"><label for="fName">Nom</label><input id="fName" type="text" maxlength="80" placeholder="Chemise Oxford bleu ciel" autocapitalize="sentences"></div>
