@@ -598,6 +598,24 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
 .capcard span { font-size: 13px; color: var(--muted); }
 .capcard .btn { flex: none; }
 .capimg { display: block; width: 100%; max-height: 200px; object-fit: contain; border-radius: 16px; background: var(--bg); margin-bottom: 12px; }
+.photobox.selfie .view { height: 170px; }
+.tcb { flex: none; display: flex; flex-direction: column; gap: 8px; }
+.chkrow { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: var(--muted); }
+.chkrow input { width: 18px; height: 18px; flex: none; }
+.gbox { display: flex; flex-direction: column; gap: 10px; }
+.gbox:empty { display: none; }
+.grow { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 16px; background: var(--bg); }
+.grow-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.grow-h b { font-size: 14px; min-width: 0; overflow-wrap: anywhere; }
+.gtag { flex: none; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 99px; }
+.gtag.ok { background: var(--accent-soft); color: var(--accent); }
+.gtag.q { background: var(--warn-soft); color: var(--warn); }
+.gtag.no { background: var(--surface2); color: var(--muted); }
+.gcands { display: flex; gap: 8px; overflow-x: auto; }
+.gc { flex: none; width: 92px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px; border: 2px solid transparent; border-radius: 14px; background: var(--surface); color: inherit; }
+.gc[aria-pressed="true"] { border-color: var(--accent); }
+.gc .mini { width: 64px; height: 64px; }
+.gc .gn { font-size: 12px; line-height: 1.2; text-align: center; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .chg { margin: 0; padding-left: 20px; font-size: 14px; color: var(--muted); line-height: 1.5; }
 
 /* Mannequin */
@@ -979,7 +997,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
         <datalist id="dlLoc"></datalist>
         <datalist id="dlBag"></datalist>
         <div class="two">
-          <div class="field"><label for="fStatus2">Statut</label><select id="fStatus2"></select></div>
+          <div class="field"><label for="fStatus2">Statut</label><select id="fStatus2"></select><label class="chkrow"><input type="checkbox" id="fBasic"> Basique : non suivi pièce par pièce</label></div>
           <div class="field" id="soldBox" hidden><label for="fSold">Vendue (€)</label><input id="fSold" type="number" inputmode="decimal" step="any" min="0"></div>
         </div>
         <div class="row-btns" id="wishBox" hidden><button class="btn primary" id="btnBought" type="button">Je l'ai acheté : l'ajouter au dressing</button></div>
@@ -1024,6 +1042,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
 <input type="file" id="fileCap" accept="image/*" hidden>
 <input type="file" id="filePhoto" accept="image/*" hidden>
 <input type="file" id="fileWear" accept="image/*" hidden>
+<input type="file" id="fileSelfie" accept="image/*" hidden>
 <input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
 <input type="file" id="fileDuoLab" accept="image/*" capture="environment" hidden>
 <input type="file" id="fileX" accept="image/*" hidden>
@@ -1147,7 +1166,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   var W = { count: new Map(), last: new Map(), first: "" };
   var view = "home";
   var F = { cat: "", color: "", q: "", review: false, loc: "", tag: "", status: "live", sort: "recent", bag: "", brand: "", label: "" };
-  var selMode = false, sel = new Set();
+  var selMode = false, sel = new Set(), selFor = "bag";
   var inflight = new Set(), ctl = null, importing = false;
   var ed = null, wd = null, delTimer = null, toastTimer = null;
   var advice = [], adviceCtx = "", adviceCtl = null;
@@ -1167,7 +1186,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       purchaseDate: d.purchaseDate || "", condition: d.condition || "", status: d.status || "actif",
       soldPrice: typeof d.soldPrice === "number" ? d.soldPrice : null,
       location: d.location || "Maison", bag: d.bag || "", wearsOffset: d.wearsOffset || 0,
-      reviewed: !!d.reviewed, keptAt: d.keptAt || "", ordered: !!d.ordered, eta: d.eta || "", createdAt: d.createdAt || 0
+      reviewed: !!d.reviewed, keptAt: d.keptAt || "", basic: !!d.basic, ordered: !!d.ordered, eta: d.eta || "", createdAt: d.createdAt || 0
     };
   }
   function normWear(id, d) {
@@ -1280,6 +1299,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       tags: pickMany(r.tags, BASE_TAGS, 3),
       brand: String(r.brand || "").trim().slice(0, 40),
       size: normSize(String(r.size || "").slice(0, 14)),
+      basic: r.basic === true,
       est: estOf(r)
     };
   }
@@ -1292,6 +1312,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   function aiPatch(a, it) {
     var o = {};
     ["name", "category", "kind", "colors", "material", "seasons", "tags", "brand", "size"].forEach(function (k) { o[k] = a[k]; });
+    if (a.basic && !it) o.basic = true;
     if (a.est && (!it || it.value == null || it.valueAi)) { o.value = a.est.mid; o.valueLo = a.est.lo; o.valueHi = a.est.hi; o.valueAi = true; }
     return o;
   }
@@ -1308,7 +1329,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       ? "Tu regardes " + (blobs.length > 1 ? blobs.length + " photos" : "une photo") + " pour un inventaire de dressing. " + list.join(". ") + ".\nLes informations d'étiquette peuvent être réparties sur plusieurs photos (la marque d'un côté, la taille et la composition de l'autre) : rassemble-les. Une photo peut être de travers : lis-la quand même.\n"
       : "Tu regardes la photo d'un vêtement, d'une paire de chaussures ou d'un accessoire pour un inventaire de dressing.\n") +
       "Réponds uniquement avec un objet JSON de cette forme :\n" +
-      '{"name": "nom court et précis en français, ex: Chemise Oxford bleu ciel", "category": "...", "kind": "...", "colors": ["..."], "material": "...", "seasons": ["..."], "tags": ["..."], "brand": "...", "size": "...", "value_min": 0, "value_max": 0}\n' +
+      '{"name": "nom court et précis en français, ex: Chemise Oxford bleu ciel", "category": "...", "kind": "...", "colors": ["..."], "material": "...", "seasons": ["..."], "tags": ["..."], "brand": "...", "size": "...", "basic": false, "value_min": 0, "value_max": 0}\n' +
       "Règles :\n" +
       "- category : exactement une valeur parmi " + CATS.join(", ") + ".\n" +
       "- kind : le type précis de la pièce en un ou deux mots, en français, ex: T-shirt, Chemise, Jean, Chino, Sneakers, Doudoune, Écharpe.\n" +
@@ -1318,6 +1339,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
         : "- material : la matière la plus probable en un ou deux mots, ou \"\" si tu n'es pas sûr.\n") +
       "- seasons : les saisons où la pièce se porte, parmi " + SEASONS.join(", ") + ".\n" +
       "- tags : 0 à 3 valeurs parmi " + BASE_TAGS.join(", ") + ".\n" +
+      "- basic : true seulement pour un basique interchangeable que l'on rachète sans y penser (T-shirt uni de base, sous-vêtement, chaussettes), sinon false.\n" +
       "- value_min et value_max : fourchette réaliste du prix de revente d'occasion en France (Vinted), en euros entiers, pour une pièce en bon état. Mets 0 et 0 si la marque et le type ne permettent pas d'estimer.\n" +
       (hasLab
         ? "- brand : la marque lue sur l'étiquette ou le logo, sinon \"\".\n- size : la taille imprimée sur l'étiquette, telle quelle et courte, ex: M, L, 42, 32/32, UK 8. S'il y a plusieurs pays, garde la taille EU ou FR. Si elle n'est pas lisible, \"\"."
@@ -1604,6 +1626,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       if ((showWear || it.wearsOffset) && it.status !== "envie") sub.push(w ? plural(w, "port") : "jamais porté");
       if (it.price) sub.push(money(it.price));
       if (it.ordered && it.eta) sub.push("livraison " + fmtShort(it.eta));
+      if (isBasic(it)) sub.push("basique");
       var cls = "card" + (sel.has(it.id) ? " sel" : "") + (live || it.status === "envie" ? "" : " gone");
       var stamp = it.size ? '<span class="stamp">' + esc(it.size) + "</span>" : (live && !busy ? '<span class="stamp miss">Taille ?</span>' : "");
       var brand = it.brand ? '<span class="br">' + esc(it.brand) + "</span>" : (live && !busy ? '<span class="br miss">Marque ?</span>' : "");
@@ -1618,7 +1641,9 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     $("#selbar").hidden = !on;
     document.body.classList.toggle("selecting", on);
     if (on) {
-      $("#selN").textContent = sel.size ? plural(sel.size, "pièce") + " dans le sac" : "Touche les pièces à mettre dans un sac";
+      var bs = selFor === "basic";
+      $("#selN").textContent = bs ? (sel.size ? plural(sel.size, "pièce") + " à marquer" : "Touche les basiques") : (sel.size ? plural(sel.size, "pièce") + " dans le sac" : "Touche les pièces à mettre dans un sac");
+      $("#selMove").textContent = bs ? "Marquer" : "Déplacer";
       $("#selMove").disabled = !sel.size;
     }
   }
@@ -1676,6 +1701,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       ["stats", "chart", "Bilan", "Valeur, usage, sauvegarde et restauration.", false],
       ["bag", "box", "Faire un sac", "Sélectionne des pièces à descendre à la cave.", off || !items.length],
       ["places", "pin", "Lieux et sacs", "Ce qui est à la maison, ce qui est rangé ailleurs.", off || !items.length],
+      ["basics", "tag", "Basiques", "T-shirts unis, sous-vêtements, chaussettes : non suivis un par un.", off || !items.length],
       ["settings", "pencil", "Réglages", "Typographie, détourage, version de l'app.", false]
     ];
     rows = rows.filter(function (r) { return r[0] !== "orders" || on; });
@@ -1693,10 +1719,12 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     else if (a === "brands" || a === "stats") setView(a);
     else if (a === "bag") startBag();
     else if (a === "places") openPlaces();
+    else if (a === "basics") startBasic();
     else if (a === "settings") { stFrom = "more"; setView("settings"); }
   });
-  var BUILD = { id: "2026.11.01-d", label: "1 novembre 2026" };
+  var BUILD = { id: "2026.11.01-e", label: "1 novembre 2026" };
   var CHANGES = [
+    "Photo de moi : détection des pièces portées, basiques non suivis",
     "Photo depuis l'accueil : dressing, avis avant achat, wishlist ou commande",
     "Quatre onglets : Accueil, Dressing, Tenues, Plus",
     "Réglages : typographie, détourage, version de l'app",
@@ -1747,9 +1775,23 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) navigator.serviceWorker.getRegistration().then(function (r) { return r ? r.update() : null; }).then(function () { setTimeout(done, 600); }, done); else done();
     }
   });
+  function startBasic() {
+    if (view !== "closet") setView("closet");
+    selMode = true; selFor = "basic"; sel.clear();
+    toast("Touche les basiques : T-shirts unis, sous-vêtements, chaussettes.");
+    renderGrid(); renderSelbar();
+  }
+  async function markBasic() {
+    var ids = Array.from(sel); if (!ids.length || !itemsCol) return;
+    var n = 0;
+    for (var i = 0; i < ids.length; i++) { try { await itemsCol.doc(ids[i]).update({ basic: true }); n++; } catch (e) { /* on continue */ } }
+    selMode = false; sel.clear(); selFor = "bag";
+    renderGrid(); renderSelbar();
+    toast(plural(n, "pièce") + " marquée" + (n > 1 ? "s" : "") + " comme basique" + (n > 1 ? "s" : "") + ".");
+  }
   function startBag() {
     if (view !== "closet") setView("closet");
-    selMode = true; sel.clear();
+    selMode = true; selFor = "bag"; sel.clear();
     toast("Mode sac : touche les pièces à ranger.");
     renderGrid(); renderSelbar();
   }
@@ -2034,6 +2076,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     $("#fLocIn").value = it.location;
     $("#fBag").value = it.bag;
     $("#fStatus2").value = it.status;
+    $("#fBasic").checked = !!it.basic;
     $("#fSold").value = it.soldPrice == null ? "" : it.soldPrice;
     $("#soldBox").hidden = it.status !== "vendu";
     $("#wishBox").hidden = !(it.id && it.status === "envie");
@@ -2107,6 +2150,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       status: status, soldPrice: status === "vendu" ? numOrNull($("#fSold").value) : null,
       location: loc, bag: loc === "Maison" ? "" : $("#fBag").value.trim(),
       wearsOffset: Math.max(0, Math.round(numOrNull($("#fOffset").value) || 0)),
+      basic: $("#fBasic").checked,
       ordered: status === "envie" && !!ed.ordered, eta: status === "envie" && ed.ordered ? ed.eta || "" : ""
     };
     var old = ed.oldPhoto, old2 = ed.oldPhoto2, dropX = ed.dropX.slice();
@@ -2264,8 +2308,8 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     var tw = wears.filter(function (w) { return w.date === today; })[0];
     var can = !!wearsCol && !unavailable;
     $("#today").innerHTML = tw
-      ? '<div><h2>Tenue du jour</h2><p>' + plural(tw.items.length, "pièce") + (tw.occasion ? " · " + esc(tw.occasion) : "") + "</p>" + strip(tw.items, 8) + '</div><button class="btn" type="button" data-edit="' + esc(today) + '">Modifier</button>'
-      : '<div><h2>Tenue du jour</h2><p>' + esc(fmtDay(today, true)) + '. Pas encore notée.</p></div><button class="btn primary" type="button" data-new="1"' + (can ? "" : " disabled") + ">Noter ma tenue</button>";
+      ? '<div><h2>Tenue du jour</h2><p>' + plural(tw.items.length, "pièce") + (tw.occasion ? " · " + esc(tw.occasion) : "") + "</p>" + strip(tw.items, 8) + '</div><div class="tcb"><button class="btn" type="button" data-edit="' + esc(today) + '">Modifier</button><button class="btn" type="button" data-selfie="1"' + (can ? "" : " disabled") + ">Photo de moi</button></div>"
+      : '<div><h2>Tenue du jour</h2><p>' + esc(fmtDay(today, true)) + '. Pas encore notée.</p></div><div class="tcb"><button class="btn primary" type="button" data-new="1"' + (can ? "" : " disabled") + '>Noter ma tenue</button><button class="btn" type="button" data-selfie="1"' + (can ? "" : " disabled") + ">Photo de moi</button></div>";
     $("#favChip").setAttribute("aria-pressed", String(!!renderJournal.fav));
     var list = wears.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
     if (renderJournal.fav) list = list.filter(function (w) { return w.rating >= 4; });
@@ -2304,6 +2348,8 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     body.innerHTML =
       '<div class="field"><label for="wDate">Date</label><input id="wDate" type="date" value="' + esc(date) + '"' + (ex ? " disabled" : "") + "></div>" +
       '<div class="photobox"><div class="view" id="wView"></div><div class="row-btns"><button class="btn small" type="button" id="wShootBtn">Prendre la photo</button><button class="btn small" type="button" id="wPhotoBtn">Galerie</button><button class="btn small" type="button" id="wAi" hidden>Deviner les pièces</button></div></div>' +
+      '<div class="gbox" id="wGuess"></div>' +
+      '<label class="chkrow" id="wKeepBox" hidden><input type="checkbox" id="wKeep"> Garder la photo dans le journal</label>' +
       '<div class="avatar sm" id="wAvatar"></div>' +
       '<div class="field"><span class="lab" id="wSelLab"></span><div class="strip" id="wSel"></div></div>' +
       '<div class="pickbar"><input id="wQ" type="search" placeholder="Chercher une pièce" aria-label="Chercher une pièce"><select id="wCat" aria-label="Catégorie"></select></div>' +
@@ -2339,6 +2385,11 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
         if (wd.items.has(id)) wd.items.delete(id); else wd.items.add(id);
         b.setAttribute("aria-pressed", String(wd.items.has(id)));
         renderWearSel();
+      } else if (b.hasAttribute("data-gpick")) {
+        var gid = b.getAttribute("data-gpick"), grow = (wd.guess || []).filter(function (r) { return r.ids.indexOf(gid) >= 0; })[0];
+        if (wd.items.has(gid)) wd.items.delete(gid);
+        else { wd.items.add(gid); if (grow) grow.ids.forEach(function (o) { if (o !== gid) wd.items.delete(o); }); }
+        renderWearSel(); renderWearGrid(); renderGuess();
       } else if (b.hasAttribute("data-unpick")) {
         wd.items.delete(b.getAttribute("data-unpick")); renderWearSel(); renderWearGrid();
       } else if (b.hasAttribute("data-star")) {
@@ -2381,31 +2432,68 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       return '<button type="button" data-star="' + n + '" aria-label="' + n + ' sur 5" aria-pressed="' + (wd.rating >= n) + '">★</button>';
     }).join("");
   }
-  async function guessPieces() {
+  function renderGuess() {
+    var el = $("#wGuess"); if (!el) return;
+    var g = wd && wd.guess;
+    if (!g || !g.length) { el.innerHTML = ""; return; }
+    el.innerHTML = '<span class="lab">Ce que j\'ai vu</span>' + g.map(function (row) {
+      var st = row.ids.length ? (row.sure ? ["ok", "Sûr"] : ["q", "À confirmer"]) : ["no", "Absente"];
+      var head = '<div class="grow-h"><b>' + esc(row.desc || "Pièce") + '</b><span class="gtag ' + st[0] + '">' + st[1] + "</span></div>";
+      if (!row.ids.length) return '<div class="grow">' + head + '<p class="hint">Pas dans ton dressing. Tu pourras l\'ajouter plus tard.</p></div>';
+      return '<div class="grow">' + head + '<div class="gcands">' + row.ids.map(function (id) {
+        var it = itemById(id); if (!it) return "";
+        return '<button class="gc" type="button" data-gpick="' + esc(id) + '" aria-pressed="' + wd.items.has(id) + '"><span class="mini">' + thumbImg(it) + '</span><span class="gn">' + esc(it.name || "Sans nom") + "</span></button>";
+      }).join("") + "</div></div>";
+    }).join("");
+  }
+  async function guessPieces(auto) {
     if (!sample || !wd) return;
     var cur = wd, btn = $("#wAi"), msg = $("#wMsg");
-    btn.disabled = true; btn.textContent = "Analyse…"; msg.textContent = "";
+    btn.disabled = true; btn.textContent = "Analyse…"; msg.textContent = auto === true ? "Je regarde ta tenue…" : "";
     try {
       var blob = cur.newBlob || await srcToBlob(srcOf(cur));
-      var list = eligible(), codes = {};
+      var list = eligible().filter(function (it) { return !isBasic(it); }).slice(0, 250), codes = {};
       var lines = list.map(function (it, i) {
         var c = "p" + (i + 1); codes[c] = it.id;
-        return c + " | " + (it.name || "sans nom") + " | " + (it.category || "?") + " | " + it.colors.join("/");
+        return [c, it.name || "sans nom", it.kind || it.category || "?", it.colors.join("/") || "?", it.material || "?"].join(" | ");
       }).join("\n");
-      var prompt = "Voici la photo d'une tenue portée. Voici la liste des pièces de mon dressing (code | nom | catégorie | couleurs) :\n" + lines +
-        "\n\nIdentifie quelles pièces de cette liste sont portées sur la photo. Ne retiens que celles dont tu es raisonnablement sûr (maximum 8). " +
-        'Réponds uniquement avec un objet JSON : {"pieces": ["p3", "p12"]}';
-      var r = await sample.json(prompt, { images: blob, modelTier: "default" });
+      var prompt = "Voici la photo d'une personne qui porte sa tenue. Voici mon dressing (code | nom | type | couleurs | matière) :\n" + lines + "\n\n" +
+        "Repère chaque pièce visible sur la personne : haut, pull, veste, bas, chaussures, accessoires. Ignore les T-shirts unis de base, les sous-vêtements et les chaussettes. N'invente rien et ne liste pas ce qui n'est pas visible.\n" +
+        'Pour chaque pièce visible, donne : "c" le code de la pièce de mon dressing la plus probable ("" si rien ne correspond), "conf" = "sure" si tu es certain que c\'est cette pièce, sinon "doute", "alt" = jusqu\'à 2 autres codes plausibles, "desc" = description courte de ce que tu vois (type, couleur).\n' +
+        'Réponds uniquement avec un objet JSON : {"worn": [{"c": "p3", "conf": "sure", "alt": ["p8"], "desc": "pull gris col rond"}]}';
+      var r = await sample.json(prompt, { images: blob, modelTier: "default", cache: false });
       if (wd !== cur) return;
-      var ids = (r && Array.isArray(r.pieces) ? r.pieces : []).map(function (c) { return codes[String(c)]; }).filter(Boolean);
-      ids.forEach(function (id) { cur.items.add(id); });
-      renderWearSel(); renderWearGrid();
-      msg.textContent = ids.length ? plural(ids.length, "pièce") + " suggérée" + (ids.length > 1 ? "s" : "") + ". Vérifie la sélection." : "Je n'ai reconnu aucune pièce avec certitude. Choisis-les à la main.";
+      var taken = new Set(), rows = [];
+      (r && Array.isArray(r.worn) ? r.worn : []).slice(0, 12).forEach(function (x) {
+        if (!x) return;
+        var ids = uniq([x.c].concat(Array.isArray(x.alt) ? x.alt : []).map(function (c) { return codes[String(c)]; })).slice(0, 3);
+        var sure = String(x.conf) === "sure" && ids.length > 0 && !taken.has(ids[0]);
+        if (sure) taken.add(ids[0]);
+        rows.push({ desc: String(x.desc || "").slice(0, 60), sure: sure, ids: ids });
+      });
+      cur.guess = rows;
+      rows.forEach(function (row) { if (row.sure) cur.items.add(row.ids[0]); });
+      renderWearSel(); renderWearGrid(); renderGuess();
+      if (rows.length && $("#wGuess").scrollIntoView) $("#wGuess").scrollIntoView({ behavior: "smooth", block: "start" });
+      var ns = rows.filter(function (x) { return x.sure; }).length, nq = rows.filter(function (x) { return !x.sure && x.ids.length; }).length, na = rows.filter(function (x) { return !x.ids.length; }).length;
+      msg.textContent = rows.length ? [ns ? plural(ns, "pièce") + " sûre" + (ns > 1 ? "s" : "") : "", nq ? nq + " à confirmer" : "", na ? na + " hors dressing" : ""].filter(Boolean).join(", ") + "." : "Je n'ai reconnu aucune pièce avec certitude. Choisis-les à la main.";
     } catch (e) {
       if (wd === cur) msg.textContent = e && e.code ? aiMsg(e) : "Impossible de relire la photo.";
     }
     if (wd === cur) { btn.disabled = false; btn.textContent = "Deviner les pièces"; }
   }
+  async function startSelfie(file) {
+    if (!wearsCol) return;
+    var blob;
+    try { blob = await toJpeg(file, 1000, 0.82); } catch (e) { toast("Cette photo est illisible. Essaie-en une autre."); return; }
+    openWear({});
+    var cur = wd; cur.selfie = true; cur.newBlob = blob; cur.preview = URL.createObjectURL(blob);
+    $("#wKeepBox").hidden = false;
+    $("#wView").parentNode.classList.add("selfie");
+    renderWearPhoto();
+    if (sample && imgAI) guessPieces(true);
+  }
+  $("#fileSelfie").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; if (f) startSelfie(f); });
   async function saveWear() {
     if (!wd || !wearsCol) return;
     var w = wd, msg = $("#wMsg");
@@ -2414,6 +2502,13 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     if (!parseDay(date)) { msg.textContent = "Date invalide."; return; }
     $("#wSave").disabled = true;
     var ex = wears.filter(function (x) { return x.date === date; })[0];
+    if (w.selfie && w.newBlob && $("#wKeep") && $("#wKeep").checked) {
+      try {
+        var sp = await storePhoto(w.newBlob);
+        if (w.photo && !w.oldPhoto && w.photo !== sp.fields.photo) w.oldPhoto = w.photo;
+        w.photo = sp.fields.photo; w.thumb = sp.fields.thumb;
+      } catch (e) { msg.textContent = "La photo n'a pas pu être gardée. Réessaie ou décoche l'option."; $("#wSave").disabled = false; return; }
+    }
     var ids = Array.from(w.items);
     if (ex && !w.existing) { ids = uniq(ex.items.concat(ids)); if (!w.photo && !w.thumb) { w.photo = ex.photo; w.thumb = ex.thumb; } }
     var data = {
@@ -2973,6 +3068,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   $("#v-buy").addEventListener("click", function (e) { if (e.target.closest("[data-back]")) setView("home"); });
 
   // ---------- Wishlist ----------
+  function isBasic(it) { return !!it.basic || /chaussette|slip\b|boxer|calecon|culotte|brassiere|sous-vetement/.test(norm((it.kind || "") + " " + (it.name || ""))); }
   function isWish(it) { return it.status === "envie" && !it.ordered; }
   function isOrder(it) { return it.status === "envie" && !!it.ordered; }
   function openWishlist() {
@@ -3805,7 +3901,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     list.forEach(function (it) { if (all) sel.delete(it.id); else sel.add(it.id); });
     renderGrid(); renderSelbar();
   });
-  $("#selMove").addEventListener("click", openMove);
+  $("#selMove").addEventListener("click", function () { if (selFor === "basic") markBasic(); else openMove(); });
   $("#btnStop").addEventListener("click", function () { if (ctl) ctl.abort(); });
   $("#file").addEventListener("change", function (e) { var f = e.target.files; importFiles(f); e.target.value = ""; });
   $("#q").addEventListener("input", function (e) { F.q = e.target.value; renderGrid(); });
@@ -4107,7 +4203,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   var dc = { ids: [], i: 0, scope: "", kept: 0, sold: 0, given: 0, expect: 0, last: null, sellId: "" };
   function daysAgoStr(n) { var d = new Date(); d.setDate(d.getDate() - n); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
   function dcScope(it, scope) {
-    if (it.status !== "actif") return false;
+    if (it.status !== "actif" || isBasic(it)) return false;
     if (it.keptAt && it.keptAt > daysAgoStr(180)) return false;
     var w = wearsOf(it), last = W.last.get(it.id) || "";
     if (scope === "never") return w === 0;
@@ -4727,7 +4823,8 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   $("#favChip").addEventListener("click", function () { renderJournal.fav = !renderJournal.fav; renderJournal(); });
   $("#v-journal").addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
-    if (b.hasAttribute("data-new")) openWear({});
+    if (b.hasAttribute("data-selfie")) $("#fileSelfie").click();
+    else if (b.hasAttribute("data-new")) openWear({});
     else if (b.hasAttribute("data-edit")) openWear({ date: b.getAttribute("data-edit") });
     else if (b.hasAttribute("data-redo")) {
       var d = b.getAttribute("data-redo");
