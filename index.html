@@ -592,6 +592,12 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
 .sw i { position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
 .sw[aria-checked="true"] { background: var(--accent); }
 .sw[aria-checked="true"] i { transform: translateX(20px); }
+.capcard { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 20px; background: var(--surface); box-shadow: var(--shadow); }
+.capcard > div { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.capcard b { font-family: var(--font-display); font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+.capcard span { font-size: 13px; color: var(--muted); }
+.capcard .btn { flex: none; }
+.capimg { display: block; width: 100%; max-height: 200px; object-fit: contain; border-radius: 16px; background: var(--bg); margin-bottom: 12px; }
 .chg { margin: 0; padding-left: 20px; font-size: 14px; color: var(--muted); line-height: 1.5; }
 
 /* Mannequin */
@@ -702,6 +708,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     <div id="hLook"></div>
     <div id="hWx"></div>
     <div id="hTodo"></div>
+    <div class="capcard" id="hCap" hidden><div><b>Une pièce sous les yeux ?</b><span>Photographie-la : dressing, avis avant achat, wishlist ou commande.</span></div><button class="btn tape" type="button" data-act="capture"><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Photographier</button></div>
     <p class="note act" id="hBuy" hidden><span>Un achat en vue ? Photographie la pièce, je te dis si elle a sa place chez toi.</span><button class="btn small tape" type="button" data-act="buy">Je l'achète ?</button></p>
     <p class="note act" id="hTrip" hidden><span id="hTripTxt"></span><button class="btn small" type="button" data-act="trip">Ouvrir</button></p>
     <p class="note act" id="hWish" hidden><span id="hWishTxt"></span><button class="btn small" type="button" data-act="wishlist">Voir</button></p>
@@ -1014,6 +1021,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
 
 <input type="file" id="file" accept="image/*" multiple hidden>
 <input type="file" id="fileWish" accept="image/*" hidden>
+<input type="file" id="fileCap" accept="image/*" hidden>
 <input type="file" id="filePhoto" accept="image/*" hidden>
 <input type="file" id="fileWear" accept="image/*" hidden>
 <input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
@@ -1045,7 +1053,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   var BASE_TAGS = ["Sport", "Ski", "Outdoor", "Bureau", "Casual", "Chic", "Soirée", "Streetwear", "Formel"];
   var CONDS = ["Neuf", "Très bon", "Bon", "Usé", "Abîmé"];
   var STATUSES = [["actif", "En service"], ["vente", "À vendre"], ["vendu", "Vendu"], ["donne", "Donné"], ["envie", "Envie (wishlist)"]];
-  var STATUS_FILTERS = [["live", "Actives"], ["actif", "En service"], ["vente", "À vendre"], ["vendu", "Vendues"], ["donne", "Données"], ["envie", "Envies"], ["all", "Toutes"]];
+  var STATUS_FILTERS = [["live", "Actives"], ["actif", "En service"], ["vente", "À vendre"], ["vendu", "Vendues"], ["donne", "Données"], ["envie", "Envies"], ["commande", "Commandées"], ["all", "Toutes"]];
   var SORTS = [["recent", "Plus récentes"], ["price", "Prix d'achat, haut"], ["value", "Valeur, haute"], ["wearsAsc", "Moins portées"], ["wearsDesc", "Plus portées"], ["cpw", "Coût par port, haut"], ["name", "Nom A à Z"]];
   var QUICK = ["Bureau", "Repas d'affaires", "Dîner chic", "Week-end casual", "Soirée", "Sport", "Ski"];
   var TYPES = {
@@ -1159,7 +1167,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       purchaseDate: d.purchaseDate || "", condition: d.condition || "", status: d.status || "actif",
       soldPrice: typeof d.soldPrice === "number" ? d.soldPrice : null,
       location: d.location || "Maison", bag: d.bag || "", wearsOffset: d.wearsOffset || 0,
-      reviewed: !!d.reviewed, keptAt: d.keptAt || "", createdAt: d.createdAt || 0
+      reviewed: !!d.reviewed, keptAt: d.keptAt || "", ordered: !!d.ordered, eta: d.eta || "", createdAt: d.createdAt || 0
     };
   }
   function normWear(id, d) {
@@ -1395,7 +1403,9 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     var q = norm(F.q).trim();
     var list = items.filter(function (it) {
       if (F.status === "live" && !isLive(it)) return false;
-      if (F.status !== "live" && F.status !== "all" && it.status !== F.status) return false;
+      if (F.status === "commande") { if (!isOrder(it)) return false; }
+      else if (F.status === "envie") { if (!isWish(it)) return false; }
+      else if (F.status !== "live" && F.status !== "all" && it.status !== F.status) return false;
       if (F.cat && it.category !== F.cat) return false;
       if (F.color && it.colors.indexOf(F.color) < 0) return false;
       if (F.loc && it.location !== F.loc) return false;
@@ -1473,7 +1483,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   }
   function renderHero() {
     var el = $("#hero"), live = items.filter(isLive);
-    if (!loaded || unavailable || !live.length || railsMode() || F.status === "envie") { el.hidden = true; el.innerHTML = ""; return; }
+    if (!loaded || unavailable || !live.length || railsMode() || F.status === "envie" || F.status === "commande") { el.hidden = true; el.innerHTML = ""; return; }
     var sum = live.reduce(function (s, it) { return s + (it.price || 0); }, 0);
     var todo = live.filter(lacks).length, done = live.length - todo, pct = Math.round(done / live.length * 100);
     var away = live.filter(function (it) { return !atHome(it); }).length;
@@ -1497,6 +1507,8 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     if (r) h += '<button class="chip warn" type="button" data-review="1" aria-pressed="' + F.review + '">À compléter <small>' + r + "</small></button>";
     var wn = items.filter(isWish).length;
     if (wn || F.status === "envie") h += '<button class="chip" type="button" data-wish="1" aria-pressed="' + (F.status === "envie") + '">Envies <small>' + wn + "</small></button>";
+    var on = items.filter(isOrder).length;
+    if (on || F.status === "commande") h += '<button class="chip" type="button" data-order="1" aria-pressed="' + (F.status === "commande") + '">Commandées <small>' + on + "</small></button>";
     CATS.forEach(function (c) {
       if (counts[c]) h += '<button class="chip" type="button" data-cat="' + esc(c) + '" aria-pressed="' + (F.cat === c) + '">' + esc(c) + " <small>" + counts[c] + "</small></button>";
     });
@@ -1586,11 +1598,12 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       if (it.status === "vendu") pill = '<span class="pill">Vendu</span>';
       else if (it.status === "donne") pill = '<span class="pill">Donné</span>';
       else if (it.status === "vente") pill = '<span class="pill sale">À vendre</span>';
-      else if (it.status === "envie") pill = '<span class="pill wish">Envie</span>';
+      else if (it.status === "envie") pill = '<span class="pill wish">' + (it.ordered ? "Commandée" : "Envie") + "</span>";
       else if (!atHome(it)) pill = '<span class="pill">' + esc(it.location) + "</span>";
       var w = wearsOf(it), sub = [it.kind || it.category || "À classer"];
       if ((showWear || it.wearsOffset) && it.status !== "envie") sub.push(w ? plural(w, "port") : "jamais porté");
       if (it.price) sub.push(money(it.price));
+      if (it.ordered && it.eta) sub.push("livraison " + fmtShort(it.eta));
       var cls = "card" + (sel.has(it.id) ? " sel" : "") + (live || it.status === "envie" ? "" : " gone");
       var stamp = it.size ? '<span class="stamp">' + esc(it.size) + "</span>" : (live && !busy ? '<span class="stamp miss">Taille ?</span>' : "");
       var brand = it.brand ? '<span class="br">' + esc(it.brand) + "</span>" : (live && !busy ? '<span class="br miss">Marque ?</span>' : "");
@@ -1653,10 +1666,11 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     var el = $("#moreBody"); if (!el) return;
     var off = !itemsCol || !!unavailable, ready = loaded && !unavailable;
     var wn = ready ? items.filter(isWish).length : 0, dn = ready ? dcCount() : 0;
-    var tn = trips.filter(function (t) { return tripState(t).k !== "past"; }).length;
+    var tn = trips.filter(function (t) { return tripState(t).k !== "past"; }).length, on = ready ? items.filter(isOrder).length : 0;
     var rows = [
       ["trip", "box", "Valise", tn ? plural(tn, "valise") + " à venir ou en cours." : "Préparer un voyage avec les pièces de ton dressing.", off || !items.length],
       ["wish", "tag", "Wishlist", wn ? plural(wn, "pièce") + " repérée" + (wn > 1 ? "s" : "") + ", hors stock." : "Les pièces vues en magasin que tu ne prends pas tout de suite.", off],
+      ["orders", "box", "Commandes", plural(on, "pièce") + " en route.", off],
       ["declutter", "check", "Désencombrer", dn ? plural(dn, "pièce") + " à passer en revue." : "Garder, vendre ou donner, pièce par pièce.", off || !items.length],
       ["brands", "tag", "Marques", "Ce que tu portes par marque, ce qui te va.", false],
       ["stats", "chart", "Bilan", "Valeur, usage, sauvegarde et restauration.", false],
@@ -1664,6 +1678,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       ["places", "pin", "Lieux et sacs", "Ce qui est à la maison, ce qui est rangé ailleurs.", off || !items.length],
       ["settings", "pencil", "Réglages", "Typographie, détourage, version de l'app.", false]
     ];
+    rows = rows.filter(function (r) { return r[0] !== "orders" || on; });
     setHtml(el, '<div class="menu">' + rows.map(function (r) {
       return '<button class="mrow" type="button" data-more="' + r[0] + '"' + (r[4] ? " disabled" : "") + '><span class="mi">' + ic(r[1]) + '</span><span class="mt"><b>' + esc(r[2]) + "</b><small>" + esc(r[3]) + "</small></span></button>";
     }).join("") + "</div>");
@@ -1673,14 +1688,16 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     var a = b.getAttribute("data-more");
     if (a === "trip") { tpFrom = "more"; tp.cur = ""; setView("trip"); }
     else if (a === "wish") openWishlist();
+    else if (a === "orders") openOrders();
     else if (a === "declutter") openDeclutter();
     else if (a === "brands" || a === "stats") setView(a);
     else if (a === "bag") startBag();
     else if (a === "places") openPlaces();
     else if (a === "settings") { stFrom = "more"; setView("settings"); }
   });
-  var BUILD = { id: "2026.11.01-c", label: "1 novembre 2026" };
+  var BUILD = { id: "2026.11.01-d", label: "1 novembre 2026" };
   var CHANGES = [
+    "Photo depuis l'accueil : dressing, avis avant achat, wishlist ou commande",
     "Quatre onglets : Accueil, Dressing, Tenues, Plus",
     "Réglages : typographie, détourage, version de l'app",
     "Valise : composer, cocher, partir et revenir",
@@ -2020,6 +2037,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     $("#fSold").value = it.soldPrice == null ? "" : it.soldPrice;
     $("#soldBox").hidden = it.status !== "vendu";
     $("#wishBox").hidden = !(it.id && it.status === "envie");
+    $("#btnBought").textContent = it.ordered ? "Je l'ai reçu : l'ajouter au dressing" : "Je l'ai acheté : l'ajouter au dressing";
     $("#fOffset").value = it.wearsOffset || 0;
     $("#fNotes").value = it.notes;
     $("#fTagNew").value = "";
@@ -2088,7 +2106,8 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       purchaseDate: $("#fDate").value || "", condition: $("#fCond").value,
       status: status, soldPrice: status === "vendu" ? numOrNull($("#fSold").value) : null,
       location: loc, bag: loc === "Maison" ? "" : $("#fBag").value.trim(),
-      wearsOffset: Math.max(0, Math.round(numOrNull($("#fOffset").value) || 0))
+      wearsOffset: Math.max(0, Math.round(numOrNull($("#fOffset").value) || 0)),
+      ordered: status === "envie" && !!ed.ordered, eta: status === "envie" && ed.ordered ? ed.eta || "" : ""
     };
     var old = ed.oldPhoto, old2 = ed.oldPhoto2, dropX = ed.dropX.slice();
     var miss = [];
@@ -2722,7 +2741,8 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   function renderHome() {
     $("#hKick").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
     renderWx(); renderLook(); renderTodo();
-    $("#hBuy").hidden = !sample || !!unavailable;
+    $("#hBuy").hidden = true;
+    $("#hCap").hidden = !itemsCol || !!unavailable;
     var tn = homeTrip();
     $("#hTrip").hidden = !tn || !!unavailable;
     if (tn) $("#hTripTxt").textContent = tn.txt;
@@ -2809,6 +2829,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       return;
     }
     if (e.target.closest("[data-act='buy']")) { openBuy(); return; }
+    if (e.target.closest("[data-act='capture']")) { $("#fileCap").click(); return; }
     if (e.target.closest("[data-act='wishlist']")) { openWishlist(); return; }
     if (e.target.closest("[data-act='trip']")) { var ht = homeTrip(); tpFrom = "home"; tp.cur = ht ? ht.id : ""; setView("trip"); return; }
     if (e.target.closest("[data-act='todo']")) { gotoTodo(); return; }
@@ -2863,15 +2884,21 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   })();
 
   // ---------- Je l'achète ou pas ? ----------
-  var buy = { ctl: null, url: "", blob: null, res: null };
+  var buy = { ctl: null, url: "", blob: null, res: null, pending: null };
+  function setBuyPick(pending) {
+    buy.pending = pending || null;
+    $("#bPick").innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>' + (pending ? "Analyser cette photo" : "Photographier la pièce");
+  }
   var VERDICTS = { oui: ["Oui", "oui"], plutot_oui: ["Plutôt oui", "plutot_oui"], plutot_non: ["Plutôt non", "plutot_non"], non: ["Non", "non"] };
   function setBuyMsg(t) { $("#bMsg").textContent = t || ""; }
   function openBuy() {
     $("#bNote").value = ""; $("#bOut").innerHTML = ""; setBuyMsg("");
+    setBuyPick(null);
     $("#bPick").disabled = false; $("#bStop").hidden = true;
     setView("buy");
   }
   async function runBuy(file) {
+    setBuyPick(null);
     if (!sample) { setBuyMsg("Claude n'est pas disponible pour le moment."); return; }
     var pool = items.filter(isLive).slice(0, 250);
     if (pool.length < 3) { setBuyMsg("Ajoute au moins 3 pièces à ton dressing pour que je puisse comparer."); return; }
@@ -2940,13 +2967,14 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     $("#bOut").innerHTML = h;
     setBuyMsg("");
   }
-  $("#bPick").addEventListener("click", function () { $("#bFile").click(); });
+  $("#bPick").addEventListener("click", function () { if (buy.pending) runBuy(buy.pending); else $("#bFile").click(); });
   $("#bFile").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; if (f) runBuy(f); });
   $("#bStop").addEventListener("click", function () { if (buy.ctl) buy.ctl.abort(); });
   $("#v-buy").addEventListener("click", function (e) { if (e.target.closest("[data-back]")) setView("home"); });
 
   // ---------- Wishlist ----------
-  function isWish(it) { return it.status === "envie"; }
+  function isWish(it) { return it.status === "envie" && !it.ordered; }
+  function isOrder(it) { return it.status === "envie" && !!it.ordered; }
   function openWishlist() {
     F.status = "envie"; F.cat = ""; F.review = false; F.q = ""; F.color = ""; F.loc = ""; F.tag = ""; F.bag = ""; F.brand = ""; F.label = "";
     $("#q").value = "";
@@ -2962,7 +2990,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     if (!itemsCol) return false;
     o = o || {};
     var ref = null, p;
-    toast("J'ajoute à ta wishlist…");
+    toast(o.extra && o.extra.ordered ? "J'enregistre la commande…" : "J'ajoute à ta wishlist…");
     try {
       p = await storePhoto(file);
       ref = itemsCol.doc();
@@ -2971,7 +2999,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
         name: o.name || "", category: "", kind: "", colors: [], material: "", seasons: [], tags: [], brand: "", size: "", notes: String(o.notes || "").slice(0, 400),
         price: o.price == null ? null : o.price, value: null, purchaseDate: "", condition: "", status: "envie", soldPrice: null, location: "Maison", bag: "", wearsOffset: 0,
         reviewed: false, createdAt: Date.now()
-      }, p.fields));
+      }, o.extra || {}, p.fields));
     } catch (e) {
       if (ref) inflight.delete(ref.id);
       toast("Ajout impossible. Réessaie dans un instant.");
@@ -2989,8 +3017,31 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     inflight.delete(ref.id);
     if (p.fields.photo) queueCut(ref.id, p.fields.photo, p.blob);
     renderAll();
-    toast("Dans ta wishlist.");
-    return true;
+    toast(o.extra && o.extra.ordered ? "Commande enregistrée." : "Dans ta wishlist.");
+    return ref.id;
+  }
+  async function addOrder(file) {
+    var id = await addWish(file, { extra: { ordered: true, eta: "" } });
+    if (!id) return false;
+    if (sample && imgAI) {
+      try {
+        var blob = await toJpeg(file, 1100, 0.85);
+        var r = await sample.json("Cette image est la photo d'une pièce commandée, ou la capture d'une commande en ligne (page produit, confirmation, e-mail). Date du jour : " + todayStr() + ".\n" +
+          'Réponds uniquement avec un objet JSON : {"prix": nombre ou null, "livraison": "AAAA-MM-JJ" ou "", "boutique": "nom de la boutique ou vide", "taille": "taille commandée ou vide"}.\n' +
+          "Laisse vide ce qui n'est pas lisible sur l'image. N'invente rien. La date de livraison est la date prévue, ou la fin de la fourchette, en année-mois-jour.", { images: blob, modelTier: "quick", cache: false });
+        var it = itemById(id), pt = {};
+        if (it && r) {
+          var pr = typeof r.prix === "number" ? r.prix : numOrNull(r.prix);
+          if (pr != null && pr > 0 && it.price == null) pt.price = pr;
+          if (/^\d{4}-\d{2}-\d{2}$/.test(String(r.livraison || ""))) pt.eta = String(r.livraison);
+          if (r.taille && !it.size) pt.size = normSize(String(r.taille));
+          var shop = String(r.boutique || "").trim().slice(0, 40);
+          if (shop) pt.notes = (it.notes ? it.notes + "\n" : "") + "Commandé chez " + shop + ".";
+          if (Object.keys(pt).length) await itemsCol.doc(id).update(pt);
+        }
+      } catch (e) { /* la commande reste, à compléter à la main */ }
+    }
+    return id;
   }
   $("#fileWish").addEventListener("change", async function (e) {
     var f = e.target.files && e.target.files[0]; e.target.value = "";
@@ -3000,6 +3051,40 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     if (ok && !inBuy) openWishlist();
   });
   $("#bWish").addEventListener("click", openWish);
+  // ---------- Capture depuis l'accueil ----------
+  var cap1 = { file: null, url: "" };
+  $("#fileCap").addEventListener("change", function (e) {
+    var f = e.target.files && e.target.files[0]; e.target.value = "";
+    if (!f || !itemsCol) return;
+    cap1.file = f;
+    if (cap1.url) URL.revokeObjectURL(cap1.url);
+    cap1.url = URL.createObjectURL(f);
+    var off = !itemsCol || !!unavailable;
+    var rows = [
+      ["dressing", "cam", "Ajouter à mon dressing", "Fiche créée et lue automatiquement, à compléter ensuite.", off],
+      ["eval", "check", "L'ai-je déjà ? Je l'achète ?", "Je compare avec ton dressing : doublons, tenues possibles, verdict.", !sample],
+      ["wish", "tag", "Wishlist", "Vue en magasin, pas prise tout de suite. Hors stock, hors valeur.", off],
+      ["order", "box", "Déjà commandée", "Photo de la pièce ou capture de la commande. Je note prix et livraison si je les lis.", off]
+    ];
+    var body = openDlg("Que faire de cette photo ?");
+    body.innerHTML = '<img class="capimg" alt="" src="' + cap1.url + '"><div class="menu">' + rows.map(function (r) {
+      return '<button class="mrow" type="button" data-cap="' + r[0] + '"' + (r[4] ? " disabled" : "") + '><span class="mi">' + ic(r[1]) + '</span><span class="mt"><b>' + esc(r[2]) + "</b><small>" + esc(r[3]) + "</small></span></button>";
+    }).join("") + "</div>";
+    body.onclick = function (ev) {
+      var b = ev.target.closest("[data-cap]"); if (!b || b.disabled) return;
+      var a = b.getAttribute("data-cap"), file = cap1.file;
+      closeDlg();
+      if (a === "dressing") { setView("closet"); importFiles([file]); }
+      else if (a === "eval") { openBuy(); setBuyPick(file); setBuyMsg("Photo prête. Ajoute un prix ou une remarque si tu veux, puis lance l'analyse."); }
+      else if (a === "wish") addWish(file).then(function (id) { if (id) openWishlist(); });
+      else if (a === "order") addOrder(file).then(function (id) { if (id) openOrders(); });
+    };
+  });
+  function openOrders() {
+    F.status = "commande"; F.cat = ""; F.review = false; F.q = ""; F.color = ""; F.loc = ""; F.tag = ""; F.bag = ""; F.brand = ""; F.label = "";
+    $("#q").value = "";
+    setView("closet");
+  }
   $("#bOut").addEventListener("click", async function (e) {
     if (e.target.closest("#bSee")) { openWishlist(); return; }
     var k = e.target.closest("#bKeep");
@@ -3727,6 +3812,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   $("#catChips").addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
     if (b.hasAttribute("data-wish")) { F.status = F.status === "envie" ? "live" : "envie"; F.cat = ""; F.review = false; }
+    else if (b.hasAttribute("data-order")) { F.status = F.status === "commande" ? "live" : "commande"; F.cat = ""; F.review = false; }
     else if (b.hasAttribute("data-review")) { F.review = !F.review; if (F.review) { F.cat = ""; F.status = "live"; } }
     else { F.cat = b.getAttribute("data-cat"); F.review = false; }
     renderTools(); renderGrid();
