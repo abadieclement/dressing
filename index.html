@@ -585,6 +585,14 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
 .fontopt .fs { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
 .fontopt .fb { font-size: 14px; color: var(--muted); }
 .fontopt small { font-size: 12px; font-weight: 700; color: var(--accent); }
+.swrow { display: flex; align-items: center; gap: 14px; padding: 8px 0; }
+.swrow .swt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.swrow .swt small { font-size: 13px; color: var(--muted); }
+.sw { flex: none; position: relative; width: 52px; height: 32px; border: 0; border-radius: 16px; background: var(--line); padding: 0; transition: background-color .2s; }
+.sw i { position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .2s; }
+.sw[aria-checked="true"] { background: var(--accent); }
+.sw[aria-checked="true"] i { transform: translateX(20px); }
+.chg { margin: 0; padding-left: 20px; font-size: 14px; color: var(--muted); line-height: 1.5; }
 
 /* Mannequin */
 .avatar { position: relative; display: flex; justify-content: center; align-items: flex-end; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 16px 0 8px; outline: 1.5px dashed var(--line); outline-offset: -7px; }
@@ -789,6 +797,12 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       <input id="bFile" type="file" accept="image/*" hidden>
     </div>
     <div class="outfits" id="bOut"></div>
+  </section>
+
+  <!-- RÉGLAGES -->
+  <section class="sec" id="v-settings" hidden>
+    <header class="hd"><div><h1>Réglages</h1><p>L'app, à ta main.</p></div><button class="btn small" type="button" data-st="back">‹ Retour</button></header>
+    <div class="sec" id="stBody"></div>
   </section>
 
   <!-- VALISE -->
@@ -1407,7 +1421,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   }
 
   // ---------- Rendu global ----------
-  var VIEWS = ["home", "closet", "brands", "journal", "advice", "swap", "buy", "trip", "stats"];
+  var VIEWS = ["home", "closet", "brands", "journal", "advice", "swap", "buy", "trip", "settings", "stats"];
   function renderAll() {
     renderHead();
     if (view === "home") renderHome();
@@ -1417,13 +1431,14 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     if (view === "journal") renderJournal();
     if (view === "stats") renderStats();
     if (view === "trip") renderTrip();
+    if (view === "settings") renderSettings();
     if (ed) renderUsage();
     renderSelbar();
   }
   function setView(v) {
     view = v;
     VIEWS.forEach(function (k) { $("#v-" + k).hidden = k !== v; });
-    var tv = v === "advice" || v === "swap" || v === "buy" || v === "trip" ? "home" : v;
+    var tv = v === "advice" || v === "swap" || v === "buy" || v === "trip" || v === "settings" ? "home" : v;
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
       if (b.getAttribute("data-view") === tv) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
@@ -1613,12 +1628,11 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       ["add", "image", "Importer des photos", "Depuis ta galerie, plusieurs d'un coup.", off || importing],
       ["manual", "pencil", "Créer une fiche à la main", "Sans photo, ou pour une pièce d'une marque précise.", off],
       ["wish", "tag", "Ajouter à la wishlist", "Une pièce vue en magasin que tu ne prends pas tout de suite. Hors stock, hors valeur.", off],
-      ["autocut", "image", "Détourage automatique : " + (autoCutOn() ? "activé" : "désactivé"), "Les nouvelles photos sont détourées en arrière-plan (50 Mo à la première fois).", off],
-      ["font", "pencil", "Typographie", "Change les polices de l'app. Essaie les quatre sur ton téléphone.", false],
       ["declutter", "check", "Désencombrer", "Garder, vendre ou donner, pièce par pièce. Les plus chères d'abord.", off || !items.length],
       ["trip", "box", "Valise", "Préparer un voyage avec les pièces de ton dressing.", off || !items.length],
       ["bag", "box", "Faire un sac", "Sélectionne des pièces à descendre à la cave.", off || !items.length],
-      ["places", "pin", "Lieux et sacs", "Ce qui est à la maison, ce qui est rangé ailleurs.", off || !items.length]
+      ["places", "pin", "Lieux et sacs", "Ce qui est à la maison, ce qui est rangé ailleurs.", off || !items.length],
+      ["settings", "pencil", "Réglages", "Typographie, détourage, version de l'app.", false]
     ];
     var body = openDlg("Ajouter ou ranger");
     body.innerHTML = '<div class="menu">' + rows.map(function (r) {
@@ -1633,31 +1647,62 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       else if (a === "manual") openSheet(null);
       else if (a === "wish") openWish();
       else if (a === "trip") { tp.cur = ""; setView("trip"); }
-      else if (a === "font") openFonts();
       else if (a === "declutter") openDeclutter();
-      else if (a === "autocut") { LS.set("dressing.autocut", !autoCutOn()); toast("Détourage automatique " + (autoCutOn() ? "activé." : "désactivé.")); }
+      else if (a === "settings") { stFrom = view === "settings" ? stFrom : view; setView("settings"); }
       else if (a === "bag") startBag();
       else if (a === "places") openPlaces();
     };
   }
+  var BUILD = { id: "2026.11.01-b", label: "1 novembre 2026" };
+  var CHANGES = [
+    "Réglages : typographie, détourage, version de l'app",
+    "Valise : composer, cocher, partir et revenir",
+    "Désencombrer : garder, vendre ou donner, pièce par pièce",
+    "Cintres : balancement recalculé image par image",
+    "Détourage automatique des nouvelles photos",
+    "Wishlist et file « À compléter »"
+  ];
   var FONTS = [["", "Atelier", "Bricolage Grotesque + Hanken Grotesk", "Le style actuel : titres larges et serrés."],
     ["serif", "Éditorial", "Fraunces + DM Sans", "Titres à empattements, plus magazine de mode."],
     ["tech", "Net", "Space Grotesk + Inter", "Sobre, précis, un peu technique."],
     ["round", "Doux", "Outfit + Plus Jakarta Sans", "Géométrique et arrondi, très lisible."]];
-  function openFonts() {
-    var cur = document.documentElement.getAttribute("data-font") || "";
-    var body = openDlg("Typographie");
-    body.innerHTML = '<div class="menu">' + FONTS.map(function (f) {
-      return '<button class="fontopt" type="button" data-font="' + f[0] + '" aria-pressed="' + (f[0] === cur) + '" style="' + (f[0] ? "" : "") + '"><span class="fs" style="font-family:' + (f[0] === "serif" ? "'Fraunces',Georgia,serif;font-weight:700;letter-spacing:-.015em" : f[0] === "tech" ? "'Space Grotesk',sans-serif" : f[0] === "round" ? "'Outfit',sans-serif" : "'Bricolage Grotesque',sans-serif") + '">' + esc(f[1]) + '</span><span class="fb">' + esc(f[2]) + " · " + esc(f[3]) + "</span></button>";
-    }).join("") + "</div>";
-    body.onclick = function (e) {
-      var b = e.target.closest("[data-font]"); if (!b) return;
-      var v = b.getAttribute("data-font");
-      if (v) document.documentElement.setAttribute("data-font", v); else document.documentElement.removeAttribute("data-font");
-      LS.set("dressing.font", v || null);
-      Array.prototype.forEach.call(body.querySelectorAll(".fontopt"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
-    };
+  var FONT_CSS = { serif: "'Fraunces',Georgia,serif;font-weight:700;letter-spacing:-.015em", tech: "'Space Grotesk',sans-serif", round: "'Outfit',sans-serif", "": "'Bricolage Grotesque',sans-serif" };
+  var stFrom = "home";
+  function applyFont(v) {
+    if (v) document.documentElement.setAttribute("data-font", v); else document.documentElement.removeAttribute("data-font");
+    LS.set("dressing.font", v || null);
   }
+  function swRow(key, title, sub, on) {
+    return '<div class="swrow"><div class="swt"><b>' + esc(title) + "</b><small>" + esc(sub) + '</small></div><button class="sw" type="button" role="switch" aria-checked="' + on + '" aria-label="' + esc(title) + '" data-sw="' + key + '"><i></i></button></div>';
+  }
+  function renderSettings() {
+    var el = $("#stBody"); if (!el) return;
+    var cur = document.documentElement.getAttribute("data-font") || "";
+    var h = '<div class="lblock"><h2>Apparence</h2><p class="hint">Typographie. Le changement est immédiat et reste sur cet appareil.</p><div class="menu">' + FONTS.map(function (f) {
+      return '<button class="fontopt" type="button" data-font="' + f[0] + '" aria-pressed="' + (f[0] === cur) + '"><span class="fs" style="font-family:' + FONT_CSS[f[0]] + '">' + esc(f[1]) + '</span><span class="fb">' + esc(f[2]) + " · " + esc(f[3]) + "</span></button>";
+    }).join("") + "</div></div>";
+    h += '<div class="lblock"><h2>Photos</h2>' + swRow("autocut", "Détourer les nouvelles photos", "En arrière-plan, sur la photo principale (50 Mo à la première fois).", autoCutOn()) + "</div>";
+    h += '<div class="lblock"><h2>Version</h2><p class="hint">Version ' + esc(BUILD.id) + " du " + esc(BUILD.label) + '.</p><ul class="chg">' + CHANGES.map(function (c) { return "<li>" + esc(c) + "</li>"; }).join("") + '</ul><div class="actions"><button class="btn" type="button" data-st="reload">Vérifier les mises à jour et recharger</button></div></div>';
+    setHtml(el, h);
+  }
+  $("#v-settings").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-font]");
+    if (b) { applyFont(b.getAttribute("data-font")); renderSettings(); return; }
+    b = e.target.closest("[data-sw]");
+    if (b) {
+      var k = b.getAttribute("data-sw");
+      if (k === "autocut") LS.set("dressing.autocut", !autoCutOn());
+      renderSettings(); return;
+    }
+    b = e.target.closest("[data-st]"); if (!b) return;
+    var a = b.getAttribute("data-st");
+    if (a === "back") setView(stFrom && stFrom !== "settings" ? stFrom : "home");
+    else if (a === "reload") {
+      toast("Recherche d'une mise à jour…");
+      var done = function () { location.reload(); };
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) navigator.serviceWorker.getRegistration().then(function (r) { return r ? r.update() : null; }).then(function () { setTimeout(done, 600); }, done); else done();
+    }
+  });
   function startBag() {
     if (view !== "closet") setView("closet");
     selMode = true; sel.clear();
