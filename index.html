@@ -799,6 +799,12 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     <div class="outfits" id="bOut"></div>
   </section>
 
+  <!-- PLUS -->
+  <section class="sec" id="v-more" hidden>
+    <header class="hd"><div><h1>Plus</h1><p>Le reste de ton dressing.</p></div></header>
+    <div id="moreBody"></div>
+  </section>
+
   <!-- RÉGLAGES -->
   <section class="sec" id="v-settings" hidden>
     <header class="hd"><div><h1>Réglages</h1><p>L'app, à ta main.</p></div><button class="btn small" type="button" data-st="back">‹ Retour</button></header>
@@ -829,9 +835,8 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   <div class="tabs" id="tabs">
     <button class="tab" type="button" data-view="home" aria-current="page"><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-shirt"/></svg></span>Accueil</button>
     <button class="tab" type="button" data-view="closet"><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-closet"/></svg></span>Dressing</button>
-    <button class="tab" type="button" data-view="brands"><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-tag"/></svg></span>Marques</button>
     <button class="tab" type="button" data-view="journal"><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg></span>Tenues</button>
-    <button class="tab" type="button" data-view="stats"><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg></span>Bilan</button>
+    <button class="tab" type="button" data-view="more"><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</button>
   </div>
 </nav>
 
@@ -1421,7 +1426,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   }
 
   // ---------- Rendu global ----------
-  var VIEWS = ["home", "closet", "brands", "journal", "advice", "swap", "buy", "trip", "settings", "stats"];
+  var VIEWS = ["home", "closet", "brands", "journal", "advice", "swap", "buy", "trip", "settings", "more", "stats"];
   function renderAll() {
     renderHead();
     if (view === "home") renderHome();
@@ -1432,13 +1437,14 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     if (view === "stats") renderStats();
     if (view === "trip") renderTrip();
     if (view === "settings") renderSettings();
+    if (view === "more") renderMore();
     if (ed) renderUsage();
     renderSelbar();
   }
   function setView(v) {
     view = v;
     VIEWS.forEach(function (k) { $("#v-" + k).hidden = k !== v; });
-    var tv = v === "advice" || v === "swap" || v === "buy" || v === "trip" || v === "settings" ? "home" : v;
+    var tv = v === "advice" || v === "swap" || v === "buy" ? "home" : v === "brands" || v === "stats" || v === "trip" || v === "settings" ? "more" : v;
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
       if (b.getAttribute("data-view") === tv) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
@@ -1627,12 +1633,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       ["shoot", "cam", "Ajouter en duo", "La pièce, puis ses étiquettes, autant de photos qu'il faut. Marque, taille et composition se lisent seules.", off],
       ["add", "image", "Importer des photos", "Depuis ta galerie, plusieurs d'un coup.", off || importing],
       ["manual", "pencil", "Créer une fiche à la main", "Sans photo, ou pour une pièce d'une marque précise.", off],
-      ["wish", "tag", "Ajouter à la wishlist", "Une pièce vue en magasin que tu ne prends pas tout de suite. Hors stock, hors valeur.", off],
-      ["declutter", "check", "Désencombrer", "Garder, vendre ou donner, pièce par pièce. Les plus chères d'abord.", off || !items.length],
-      ["trip", "box", "Valise", "Préparer un voyage avec les pièces de ton dressing.", off || !items.length],
-      ["bag", "box", "Faire un sac", "Sélectionne des pièces à descendre à la cave.", off || !items.length],
-      ["places", "pin", "Lieux et sacs", "Ce qui est à la maison, ce qui est rangé ailleurs.", off || !items.length],
-      ["settings", "pencil", "Réglages", "Typographie, détourage, version de l'app.", false]
+      ["wish", "tag", "Ajouter à la wishlist", "Une pièce vue en magasin que tu ne prends pas tout de suite. Hors stock, hors valeur.", off]
     ];
     var body = openDlg("Ajouter ou ranger");
     body.innerHTML = '<div class="menu">' + rows.map(function (r) {
@@ -1646,15 +1647,41 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       else if (a === "add") $("#file").click();
       else if (a === "manual") openSheet(null);
       else if (a === "wish") openWish();
-      else if (a === "trip") { tp.cur = ""; setView("trip"); }
-      else if (a === "declutter") openDeclutter();
-      else if (a === "settings") { stFrom = view === "settings" ? stFrom : view; setView("settings"); }
-      else if (a === "bag") startBag();
-      else if (a === "places") openPlaces();
     };
   }
-  var BUILD = { id: "2026.11.01-b", label: "1 novembre 2026" };
+  function renderMore() {
+    var el = $("#moreBody"); if (!el) return;
+    var off = !itemsCol || !!unavailable, ready = loaded && !unavailable;
+    var wn = ready ? items.filter(isWish).length : 0, dn = ready ? dcCount() : 0;
+    var tn = trips.filter(function (t) { return tripState(t).k !== "past"; }).length;
+    var rows = [
+      ["trip", "box", "Valise", tn ? plural(tn, "valise") + " à venir ou en cours." : "Préparer un voyage avec les pièces de ton dressing.", off || !items.length],
+      ["wish", "tag", "Wishlist", wn ? plural(wn, "pièce") + " repérée" + (wn > 1 ? "s" : "") + ", hors stock." : "Les pièces vues en magasin que tu ne prends pas tout de suite.", off],
+      ["declutter", "check", "Désencombrer", dn ? plural(dn, "pièce") + " à passer en revue." : "Garder, vendre ou donner, pièce par pièce.", off || !items.length],
+      ["brands", "tag", "Marques", "Ce que tu portes par marque, ce qui te va.", false],
+      ["stats", "chart", "Bilan", "Valeur, usage, sauvegarde et restauration.", false],
+      ["bag", "box", "Faire un sac", "Sélectionne des pièces à descendre à la cave.", off || !items.length],
+      ["places", "pin", "Lieux et sacs", "Ce qui est à la maison, ce qui est rangé ailleurs.", off || !items.length],
+      ["settings", "pencil", "Réglages", "Typographie, détourage, version de l'app.", false]
+    ];
+    setHtml(el, '<div class="menu">' + rows.map(function (r) {
+      return '<button class="mrow" type="button" data-more="' + r[0] + '"' + (r[4] ? " disabled" : "") + '><span class="mi">' + ic(r[1]) + '</span><span class="mt"><b>' + esc(r[2]) + "</b><small>" + esc(r[3]) + "</small></span></button>";
+    }).join("") + "</div>");
+  }
+  $("#v-more").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-more]"); if (!b || b.disabled) return;
+    var a = b.getAttribute("data-more");
+    if (a === "trip") { tpFrom = "more"; tp.cur = ""; setView("trip"); }
+    else if (a === "wish") openWishlist();
+    else if (a === "declutter") openDeclutter();
+    else if (a === "brands" || a === "stats") setView(a);
+    else if (a === "bag") startBag();
+    else if (a === "places") openPlaces();
+    else if (a === "settings") { stFrom = "more"; setView("settings"); }
+  });
+  var BUILD = { id: "2026.11.01-c", label: "1 novembre 2026" };
   var CHANGES = [
+    "Quatre onglets : Accueil, Dressing, Tenues, Plus",
     "Réglages : typographie, détourage, version de l'app",
     "Valise : composer, cocher, partir et revenir",
     "Désencombrer : garder, vendre ou donner, pièce par pièce",
@@ -1667,7 +1694,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     ["tech", "Net", "Space Grotesk + Inter", "Sobre, précis, un peu technique."],
     ["round", "Doux", "Outfit + Plus Jakarta Sans", "Géométrique et arrondi, très lisible."]];
   var FONT_CSS = { serif: "'Fraunces',Georgia,serif;font-weight:700;letter-spacing:-.015em", tech: "'Space Grotesk',sans-serif", round: "'Outfit',sans-serif", "": "'Bricolage Grotesque',sans-serif" };
-  var stFrom = "home";
+  var stFrom = "more";
   function applyFont(v) {
     if (v) document.documentElement.setAttribute("data-font", v); else document.documentElement.removeAttribute("data-font");
     LS.set("dressing.font", v || null);
@@ -1696,7 +1723,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     }
     b = e.target.closest("[data-st]"); if (!b) return;
     var a = b.getAttribute("data-st");
-    if (a === "back") setView(stFrom && stFrom !== "settings" ? stFrom : "home");
+    if (a === "back") setView(stFrom && stFrom !== "settings" ? stFrom : "more");
     else if (a === "reload") {
       toast("Recherche d'une mise à jour…");
       var done = function () { location.reload(); };
@@ -2783,7 +2810,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     }
     if (e.target.closest("[data-act='buy']")) { openBuy(); return; }
     if (e.target.closest("[data-act='wishlist']")) { openWishlist(); return; }
-    if (e.target.closest("[data-act='trip']")) { var ht = homeTrip(); tp.cur = ht ? ht.id : ""; setView("trip"); return; }
+    if (e.target.closest("[data-act='trip']")) { var ht = homeTrip(); tpFrom = "home"; tp.cur = ht ? ht.id : ""; setView("trip"); return; }
     if (e.target.closest("[data-act='todo']")) { gotoTodo(); return; }
     if ((t = e.target.closest(".pc"))) { openSwap(+t.getAttribute("data-pos")); return; }
     if ((t = e.target.closest(".lrow"))) openSheet(t.getAttribute("data-id"));
@@ -4117,7 +4144,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   }
 
   // ---------- Valise ----------
-  var tp = { cur: "", busy: false, msg: "", delAsk: false, ctl: null };
+  var tp = { cur: "", busy: false, msg: "", delAsk: false, ctl: null }, tpFrom = "more";
   var TRIP_ACTS = ["Ville", "Plage", "Rando", "Ski", "Soirées", "Travail", "Sport"];
   function normTrip(id, d) {
     return {
@@ -4158,7 +4185,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   function tripDates(t) { return t.from && t.to ? fmtShort(t.from) + " au " + fmtShort(t.to) + " · " + plural(tripNights(t), "nuit") : ""; }
   function renderTrip() {
     var el = $("#tpBody"); if (!el) return;
-    $("#tpBack").textContent = tp.cur ? "‹ Valises" : "‹ Accueil";
+    $("#tpBack").textContent = tp.cur ? "‹ Valises" : tpFrom === "home" ? "‹ Accueil" : "‹ Plus";
     if (!loaded || unavailable) { setHtml(el, '<p class="note">' + esc(unavailable || "Chargement…") + "</p>"); return; }
     var t = tp.cur ? tripById(tp.cur) : null;
     if (tp.cur && !t) { tp.cur = ""; }
@@ -4355,7 +4382,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     }
     b = e.target.closest("[data-tp]"); if (!b) return;
     var a = b.getAttribute("data-tp");
-    if (a === "back") { if (tp.cur) { tp.cur = ""; tp.msg = ""; tp.delAsk = false; renderTrip(); } else setView("home"); return; }
+    if (a === "back") { if (tp.cur) { tp.cur = ""; tp.msg = ""; tp.delAsk = false; renderTrip(); } else setView(tpFrom || "more"); return; }
     if (a === "new") { openTripForm(); return; }
     if (!t) return;
     if (a === "add") openTripPicker(t);
