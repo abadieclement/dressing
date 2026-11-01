@@ -625,6 +625,22 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
 .fillp .fname small { color: var(--muted); font-weight: 500; }
 .fillp .field { display: grid; gap: 8px; }
 .fillp .panel-foot .btn { flex: 1 1 auto; }
+.fillp .dact { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; }
+.fillp .dact.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fillp .dact .btn { padding: 0 6px; flex: none; }
+.fillp .dlnk { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; }
+.fillp .dlnk .linkbtn { align-self: center; }
+.tprow { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--line); }
+.tprow .lrow { flex: 1 1 auto; min-width: 0; border-bottom: 0; }
+.tpx { flex: none; width: 40px; height: 44px; border: 0; background: none; color: var(--muted); font-size: 22px; line-height: 1; }
+.cbx { width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--line); display: grid; place-items: center; color: transparent; }
+.cbx .ic { width: 16px; height: 16px; }
+.tpchk[aria-pressed="true"] .cbx { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.tpchk[aria-pressed="true"] .lt b { opacity: .55; text-decoration: line-through; }
+.tpgrp { background: var(--surface); border-radius: 22px; box-shadow: var(--shadow); padding: 12px 14px 8px; }
+.tpgrp h2 small { font-size: 14px; color: var(--muted); font-weight: 600; }
+.tpadd { display: flex; gap: 8px; padding: 10px 0 4px; }
+.tpadd input { flex: 1 1 auto; min-width: 0; }
 </style>
 </head>
 <body>
@@ -667,6 +683,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     <div id="hWx"></div>
     <div id="hTodo"></div>
     <p class="note act" id="hBuy" hidden><span>Un achat en vue ? Photographie la pièce, je te dis si elle a sa place chez toi.</span><button class="btn small tape" type="button" data-act="buy">Je l'achète ?</button></p>
+    <p class="note act" id="hTrip" hidden><span id="hTripTxt"></span><button class="btn small" type="button" data-act="trip">Ouvrir</button></p>
     <p class="note act" id="hWish" hidden><span id="hWishTxt"></span><button class="btn small" type="button" data-act="wishlist">Voir</button></p>
   </section>
 
@@ -760,6 +777,12 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       <input id="bFile" type="file" accept="image/*" hidden>
     </div>
     <div class="outfits" id="bOut"></div>
+  </section>
+
+  <!-- VALISE -->
+  <section class="sec" id="v-trip" hidden>
+    <header class="hd"><div><h1>Valise</h1><p>Prépare un voyage avec les pièces de ton dressing.</p></div><button class="btn small" type="button" data-tp="back" id="tpBack">‹ Accueil</button></header>
+    <div class="sec" id="tpBody"></div>
   </section>
 
   <!-- CHANGER UNE PIÈCE -->
@@ -1079,7 +1102,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     return "";
   }
 
-  var db = null, user = null, assets = null, sample = null, dl = null, uid = null, itemsCol = null, wearsCol = null;
+  var db = null, user = null, assets = null, sample = null, dl = null, uid = null, itemsCol = null, wearsCol = null, tripsCol = null, trips = [];
   var imgAI = false, imgMax = 1;
   var items = [], wears = [], loaded = false, unavailable = "";
   var W = { count: new Map(), last: new Map(), first: "" };
@@ -1105,7 +1128,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       purchaseDate: d.purchaseDate || "", condition: d.condition || "", status: d.status || "actif",
       soldPrice: typeof d.soldPrice === "number" ? d.soldPrice : null,
       location: d.location || "Maison", bag: d.bag || "", wearsOffset: d.wearsOffset || 0,
-      reviewed: !!d.reviewed, createdAt: d.createdAt || 0
+      reviewed: !!d.reviewed, keptAt: d.keptAt || "", createdAt: d.createdAt || 0
     };
   }
   function normWear(id, d) {
@@ -1372,7 +1395,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
   }
 
   // ---------- Rendu global ----------
-  var VIEWS = ["home", "closet", "brands", "journal", "advice", "swap", "buy", "stats"];
+  var VIEWS = ["home", "closet", "brands", "journal", "advice", "swap", "buy", "trip", "stats"];
   function renderAll() {
     renderHead();
     if (view === "home") renderHome();
@@ -1381,13 +1404,14 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     if (view === "brands") renderBrands();
     if (view === "journal") renderJournal();
     if (view === "stats") renderStats();
+    if (view === "trip") renderTrip();
     if (ed) renderUsage();
     renderSelbar();
   }
   function setView(v) {
     view = v;
     VIEWS.forEach(function (k) { $("#v-" + k).hidden = k !== v; });
-    var tv = v === "advice" || v === "swap" || v === "buy" ? "home" : v;
+    var tv = v === "advice" || v === "swap" || v === "buy" || v === "trip" ? "home" : v;
     Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (b) {
       if (b.getAttribute("data-view") === tv) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
@@ -1578,6 +1602,8 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       ["manual", "pencil", "Créer une fiche à la main", "Sans photo, ou pour une pièce d'une marque précise.", off],
       ["wish", "tag", "Ajouter à la wishlist", "Une pièce vue en magasin que tu ne prends pas tout de suite. Hors stock, hors valeur.", off],
       ["autocut", "image", "Détourage automatique : " + (autoCutOn() ? "activé" : "désactivé"), "Les nouvelles photos sont détourées en arrière-plan (50 Mo à la première fois).", off],
+      ["declutter", "check", "Désencombrer", "Garder, vendre ou donner, pièce par pièce. Les plus chères d'abord.", off || !items.length],
+      ["trip", "box", "Valise", "Préparer un voyage avec les pièces de ton dressing.", off || !items.length],
       ["bag", "box", "Faire un sac", "Sélectionne des pièces à descendre à la cave.", off || !items.length],
       ["places", "pin", "Lieux et sacs", "Ce qui est à la maison, ce qui est rangé ailleurs.", off || !items.length]
     ];
@@ -1593,6 +1619,8 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       else if (a === "add") $("#file").click();
       else if (a === "manual") openSheet(null);
       else if (a === "wish") openWish();
+      else if (a === "trip") { tp.cur = ""; setView("trip"); }
+      else if (a === "declutter") openDeclutter();
       else if (a === "autocut") { LS.set("dressing.autocut", !autoCutOn()); toast("Détourage automatique " + (autoCutOn() ? "activé." : "désactivé.")); }
       else if (a === "bag") startBag();
       else if (a === "places") openPlaces();
@@ -2591,6 +2619,9 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     $("#hKick").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
     renderWx(); renderLook(); renderTodo();
     $("#hBuy").hidden = !sample || !!unavailable;
+    var tn = homeTrip();
+    $("#hTrip").hidden = !tn || !!unavailable;
+    if (tn) $("#hTripTxt").textContent = tn.txt;
     var wn = items.filter(isWish).length;
     $("#hWish").hidden = !wn || !!unavailable;
     $("#hWishTxt").textContent = plural(wn, "pièce") + " dans ta wishlist.";
@@ -2675,6 +2706,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     }
     if (e.target.closest("[data-act='buy']")) { openBuy(); return; }
     if (e.target.closest("[data-act='wishlist']")) { openWishlist(); return; }
+    if (e.target.closest("[data-act='trip']")) { var ht = homeTrip(); tp.cur = ht ? ht.id : ""; setView("trip"); return; }
     if (e.target.closest("[data-act='todo']")) { gotoTodo(); return; }
     if ((t = e.target.closest(".pc"))) { openSwap(+t.getAttribute("data-pos")); return; }
     if ((t = e.target.closest(".lrow"))) openSheet(t.getAttribute("data-id"));
@@ -3214,6 +3246,8 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     else if (days < 60) h += '<p class="note warn">Suivi des ports depuis le ' + esc(fmtDay(W.first)) + " (" + plural(days, "jour") + "). Les classements gagnent en fiabilité après environ 2 mois de tenues notées.</p>";
     else h += '<p class="note">Suivi des ports depuis le ' + esc(fmtDay(W.first)) + " (" + plural(days, "jour") + ").</p>";
 
+    var dcn = dcCount();
+    if (dcn) h += '<p class="note act"><span>' + plural(dcn, "pièce") + " à passer en revue : jamais portées, peu portées ou oubliées.</span>" + '<button class="btn small tape" type="button" data-bk="declutter">Désencombrer</button></p>';
     var cand = live.filter(function (it) { return it.status === "actif" && wearsOf(it) <= 3 && (it.value || it.price); })
       .sort(function (a, b) { return (b.value || b.price) - (a.value || a.price); }).slice(0, 8);
     var best = live.filter(function (it) { return it.price > 0 && wearsOf(it) >= 5; }).sort(function (a, b) { return cpw(a) - cpw(b); }).slice(0, 6);
@@ -3867,6 +3901,388 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     }
     autoCut.run = false;
   }
+  // ---------- Désencombrer ----------
+  var dc = { ids: [], i: 0, scope: "", kept: 0, sold: 0, given: 0, expect: 0, last: null, sellId: "" };
+  function daysAgoStr(n) { var d = new Date(); d.setDate(d.getDate() - n); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function dcScope(it, scope) {
+    if (it.status !== "actif") return false;
+    if (it.keptAt && it.keptAt > daysAgoStr(180)) return false;
+    var w = wearsOf(it), last = W.last.get(it.id) || "";
+    if (scope === "never") return w === 0;
+    if (scope === "few") return w >= 1 && w <= 3;
+    if (scope === "old") return w > 0 && !!last && last < daysAgoStr(180);
+    return false;
+  }
+  function dcList(scope) {
+    return items.filter(function (it) { return dcScope(it, scope); }).sort(function (a, b) { return (b.value || b.price || 0) - (a.value || a.price || 0); });
+  }
+  function dcCount() {
+    var s = new Set();
+    ["never", "few", "old"].forEach(function (k) { dcList(k).forEach(function (it) { s.add(it.id); }); });
+    return s.size;
+  }
+  function openDeclutter() {
+    if (!itemsCol) return;
+    var sc = [["never", "Jamais portées", "Aucun port enregistré."], ["few", "Peu portées", "Portées 1 à 3 fois."], ["old", "Oubliées", "Pas portées depuis plus de 6 mois."]].map(function (s) {
+      return { k: s[0], t: s[1], d: s[2], n: dcList(s[0]).length };
+    });
+    if (!sc.some(function (s) { return s.n; })) { toast("Rien à trier pour le moment."); return; }
+    var body = openDlg("Désencombrer");
+    body.innerHTML = '<p class="hint">Je te montre tes pièces une par une, les plus chères d\'abord. Tu choisis garder, vendre ou donner. Une pièce gardée ne revient pas avant 6 mois.</p><div class="menu">' + sc.map(function (s) {
+      return '<button class="mrow" type="button" data-dc="' + s.k + '"' + (s.n ? "" : " disabled") + '><span class="mi">' + ic("check") + '</span><span class="mt"><b>' + esc(s.t) + " · " + s.n + "</b><small>" + esc(s.d) + "</small></span></button>";
+    }).join("") + "</div>" +
+      (W.first ? '<p class="hint">Le suivi des ports a commencé le ' + esc(fmtDay(W.first)) + ". Une pièce portée sans être enregistrée apparaît ici : touche Garder.</p>" : '<p class="hint">Aucun port n\'est encore enregistré : toutes tes pièces apparaissent en « jamais portées ». Touche Garder pour celles que tu portes.</p>');
+    body.onclick = function (e) {
+      var b = e.target.closest("[data-dc]");
+      if (b && !b.disabled) startDeclutter(b.getAttribute("data-dc"));
+    };
+  }
+  function startDeclutter(scope) {
+    dc = { ids: dcList(scope).map(function (it) { return it.id; }), i: 0, scope: scope, kept: 0, sold: 0, given: 0, expect: 0, last: null, sellId: "" };
+    renderDc();
+  }
+  function dcCur() {
+    while (dc.i < dc.ids.length) { var it = itemById(dc.ids[dc.i]); if (it) return it; dc.i++; }
+    return null;
+  }
+  function dcWire() {
+    var body = $("#dlgBody");
+    body.onclick = function (e) {
+      var b = e.target.closest("[data-dc]");
+      if (b && !b.disabled) dcAct(b.getAttribute("data-dc"));
+    };
+  }
+  function dcPhotos(it) {
+    var s1 = srcOf(it), lab = hasLabel(it);
+    return '<div class="fph' + (lab ? "" : " one") + '"><span>' + (s1 ? "<img" + (it.cut ? " data-cut" : "") + ' src="' + esc(s1) + '" alt="Photo de la pièce">' : "Pas de photo") + "</span>" +
+      (lab ? '<span><img src="' + esc(srcOf2(it)) + '" alt="Étiquette"></span>' : "") + "</div>";
+  }
+  function renderDc() {
+    var it = dcCur(), body = $("#dlgBody");
+    if (!it) { finishDc(); return; }
+    var n = dc.ids.length, pos = dc.i + 1, w = wearsOf(it), last = W.last.get(it.id);
+    var stat = [w ? "Portée " + w + " fois" + (last ? ", dernier port " + fmtDay(last) : "") : "Jamais portée",
+      it.price ? "payée " + money(it.price) : "",
+      it.value ? "revente " + money(it.value) + (it.valueAi && it.valueLo != null && it.valueHi != null ? " (" + it.valueLo + " à " + it.valueHi + ")" : "") : "",
+      !atHome(it) ? "rangée : " + it.location : "", it.seasons.length ? it.seasons.join(", ") : ""].filter(Boolean).join(" · ");
+    body.innerHTML = '<div class="fillp">' +
+      '<div class="fprog"><b>' + pos + " / " + n + "</b><span>" + [dc.kept ? dc.kept + " gardée" + (dc.kept > 1 ? "s" : "") : "", dc.sold ? dc.sold + " à vendre" : "", dc.given ? dc.given + " donnée" + (dc.given > 1 ? "s" : "") : ""].filter(Boolean).join(" · ") + "</span></div>" +
+      '<div class="fbar"><i style="width:' + Math.round((pos - 1) / n * 100) + '%"></i></div>' + dcPhotos(it) +
+      '<p class="fname">' + esc(it.name || "Sans nom") + " <small>" + esc([it.brand, it.size].filter(Boolean).join(" · ")) + "</small></p>" +
+      '<p class="hint">' + esc(stat) + "</p>" +
+      '<div class="dlnk"><button class="linkbtn" type="button" data-dc="skip">Passer</button><button class="linkbtn" type="button" data-dc="open">Voir la fiche</button>' + (dc.last ? '<button class="linkbtn" type="button" data-dc="undo">Annuler</button>' : "") + "</div>" +
+      '<div class="panel-foot"><div class="dact"><button class="btn" type="button" data-dc="keep">Garder</button><button class="btn primary" type="button" data-dc="sell">Vendre</button><button class="btn" type="button" data-dc="give">Donner</button></div></div></div>';
+    dcWire();
+  }
+  function renderDcSold(it) {
+    var body = $("#dlgBody");
+    body.innerHTML = '<div class="fillp">' +
+      '<div class="fprog"><b>À vendre</b><span>' + esc(it.name || "Sans nom") + "</span></div>" + dcPhotos(it) +
+      '<p class="hint">' + (it.value ? "Prix retenu dans la fiche : " + money(it.value) + "." : "Pas encore de prix de revente. Tu pourras le fixer dans l'annonce.") + "</p>" +
+      '<div class="dlnk"><button class="linkbtn" type="button" data-dc="undo">Annuler la mise en vente</button></div>' +
+      '<div class="panel-foot"><div class="dact two">' + (sample ? '<button class="btn primary" type="button" data-dc="listing">Préparer l\'annonce</button>' : "") + '<button class="btn" type="button" data-dc="next">Pièce suivante</button></div></div></div>';
+    dcWire();
+  }
+  async function dcAct(a) {
+    var it = dcCur();
+    if (a === "skip") { dc.i++; dc.last = null; renderDc(); return; }
+    if (a === "next") { dc.i++; if (dc.last) dc.last.moved = true; renderDc(); return; }
+    if (a === "open") { var oid = it && it.id; closeDlg(); if (oid) openSheet(oid); return; }
+    if (a === "listing") {
+      var lid = dc.sellId; closeDlg(); if (!lid) return;
+      openSheet(lid);
+      setTimeout(function () { var v = $("#btnVinted"); if (v && !v.hidden) v.click(); }, 400);
+      return;
+    }
+    if (a === "undo") {
+      var l = dc.last; if (!l) return;
+      try { await itemsCol.doc(l.id).update(l.undo); } catch (e) { toast("Annulation impossible. Réessaie."); return; }
+      if (l.a === "keep") dc.kept = Math.max(0, dc.kept - 1); else if (l.a === "give") dc.given = Math.max(0, dc.given - 1); else { dc.sold = Math.max(0, dc.sold - 1); dc.expect = Math.max(0, dc.expect - l.val); }
+      if (l.a !== "sell" || l.moved) dc.i = Math.max(0, dc.i - 1);
+      dc.last = null; dc.sellId = "";
+      renderDc();
+      return;
+    }
+    if (!it) return;
+    var patch, undo;
+    if (a === "keep") { patch = { keptAt: todayStr() }; undo = { keptAt: it.keptAt || "" }; }
+    else if (a === "give") { patch = { status: "donne" }; undo = { status: "actif" }; }
+    else if (a === "sell") { patch = { status: "vente" }; undo = { status: "actif" }; }
+    else return;
+    Array.prototype.forEach.call($("#dlgBody").querySelectorAll(".dact .btn"), function (b) { b.disabled = true; });
+    try { await itemsCol.doc(it.id).update(patch); }
+    catch (e) { toast("Enregistrement impossible. Réessaie dans un instant."); renderDc(); return; }
+    dc.last = { id: it.id, undo: undo, a: a, val: it.value || 0 };
+    if (a === "keep") dc.kept++; else if (a === "give") dc.given++; else { dc.sold++; dc.expect += it.value || 0; }
+    if (a === "sell") { dc.sellId = it.id; renderDcSold(it); return; }
+    dc.i++;
+    renderDc();
+  }
+  function finishDc() {
+    var parts = [];
+    if (dc.kept) parts.push(dc.kept + " gardée" + (dc.kept > 1 ? "s" : ""));
+    if (dc.sold) parts.push(dc.sold + " à vendre" + (dc.expect ? " (" + money(dc.expect) + " attendus)" : ""));
+    if (dc.given) parts.push(dc.given + " donnée" + (dc.given > 1 ? "s" : ""));
+    closeDlg();
+    toast(parts.length ? "Tri terminé : " + parts.join(", ") + "." : "Tri terminé, rien n'a changé.");
+  }
+
+  // ---------- Valise ----------
+  var tp = { cur: "", busy: false, msg: "", delAsk: false, ctl: null };
+  var TRIP_ACTS = ["Ville", "Plage", "Rando", "Ski", "Soirées", "Travail", "Sport"];
+  function normTrip(id, d) {
+    return {
+      id: id, name: d.name || "Voyage", dest: d.dest || "", from: d.from || "", to: d.to || "", acts: Array.isArray(d.acts) ? d.acts : [], note: d.note || "",
+      ids: Array.isArray(d.ids) ? d.ids : [], packed: Array.isArray(d.packed) ? d.packed : [], why: d.why && typeof d.why === "object" ? d.why : {},
+      extras: (Array.isArray(d.extras) ? d.extras : []).filter(function (x) { return x && x.t; }).map(function (x) { return { t: String(x.t), d: !!x.d }; }),
+      manque: Array.isArray(d.manque) ? d.manque : [], resume: d.resume || "", away: !!d.away, prev: d.prev && typeof d.prev === "object" ? d.prev : {}, createdAt: d.createdAt || 0
+    };
+  }
+  function tripById(id) { for (var i = 0; i < trips.length; i++) if (trips[i].id === id) return trips[i]; return null; }
+  function tripNights(t) {
+    var a = parseDay(t.from), b = parseDay(t.to);
+    return a && b ? Math.max(1, Math.round((b - a) / 86400000)) : 0;
+  }
+  function tripState(t) {
+    var td = todayStr();
+    if (t.away) return { k: "away", txt: "Parti" };
+    if (t.to && t.to < td) return { k: "past", txt: "Terminé" };
+    if (t.from && t.from > td) {
+      var dd = Math.round((parseDay(t.from) - parseDay(td)) / 86400000);
+      return { k: "next", txt: dd === 1 ? "Demain" : "Dans " + dd + " jours", days: dd };
+    }
+    return { k: "now", txt: "En cours" };
+  }
+  function tripProg(t) {
+    var its = t.ids.map(itemById).filter(Boolean), pk = new Set(t.packed);
+    var total = its.length + t.extras.length, done = its.filter(function (it) { return pk.has(it.id); }).length + t.extras.filter(function (x) { return x.d; }).length;
+    return { total: total, done: done };
+  }
+  function homeTrip() {
+    var list = trips.filter(function (t) { var s = tripState(t); return s.k === "away" || s.k === "now" || (s.k === "next" && s.days <= 120); });
+    list.sort(function (a, b) { return (a.from || "") < (b.from || "") ? -1 : 1; });
+    var t = list[0]; if (!t) return null;
+    var s = tripState(t), p = tripProg(t);
+    return { id: t.id, txt: "Valise " + t.name + " : " + s.txt.toLowerCase() + (p.total ? ", " + p.done + " sur " + p.total + " emballées." : ".") };
+  }
+  function fmtShort(s) { var d = parseDay(s); return d ? d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" }) : ""; }
+  function tripDates(t) { return t.from && t.to ? fmtShort(t.from) + " au " + fmtShort(t.to) + " · " + plural(tripNights(t), "nuit") : ""; }
+  function renderTrip() {
+    var el = $("#tpBody"); if (!el) return;
+    $("#tpBack").textContent = tp.cur ? "‹ Valises" : "‹ Accueil";
+    if (!loaded || unavailable) { setHtml(el, '<p class="note">' + esc(unavailable || "Chargement…") + "</p>"); return; }
+    var t = tp.cur ? tripById(tp.cur) : null;
+    if (tp.cur && !t) { tp.cur = ""; }
+    if (!t) { setHtml(el, tripList()); return; }
+    setHtml(el, tripDetail(t));
+  }
+  function tripList() {
+    var up = trips.filter(function (t) { return tripState(t).k !== "past"; }).sort(function (a, b) { return (a.from || "") < (b.from || "") ? -1 : 1; });
+    var past = trips.filter(function (t) { return tripState(t).k === "past"; }).sort(function (a, b) { return (a.from || "") < (b.from || "") ? 1 : -1; });
+    function rows(list) {
+      return '<div class="lrows">' + list.map(function (t) {
+        var s = tripState(t), p = tripProg(t);
+        return '<button class="lrow" type="button" data-tp-open="' + esc(t.id) + '"><span class="mini">' + ic("box") + '</span><span class="lt"><b>' + esc(t.name) + "</b><small>" + esc([tripDates(t), p.total ? p.done + " / " + p.total + " emballées" : "à composer"].filter(Boolean).join(" · ")) + '</small></span><span class="lr">' + esc(s.txt) + "</span></button>";
+      }).join("") + "</div>";
+    }
+    var h = '<div class="actions"><button class="btn primary wide" type="button" data-tp="new"' + (itemsCol && tripsCol ? "" : " disabled") + ">" + ic("box") + "Nouvelle valise</button></div>";
+    if (!trips.length) h += '<p class="note">Aucune valise pour l\'instant. Donne une destination et des dates : je choisis dans ton dressing ce qui va ensemble, tu coches au fur et à mesure que tu emballes, et les pièces quittent tes tenues du jour tant que tu es parti.</p>';
+    if (up.length) h += '<div class="lblock"><h2>À venir</h2>' + rows(up) + "</div>";
+    if (past.length) h += '<div class="lblock"><h2>Passées</h2>' + rows(past) + "</div>";
+    return h;
+  }
+  function tripDetail(t) {
+    var its = t.ids.map(itemById).filter(Boolean), pk = new Set(t.packed), p = tripProg(t), s = tripState(t);
+    var by = {};
+    its.forEach(function (it) { var c = it.category || "Autres"; (by[c] = by[c] || []).push(it); });
+    var order = CATS.filter(function (c) { return by[c]; });
+    Object.keys(by).forEach(function (c) { if (order.indexOf(c) < 0) order.push(c); });
+    var h = '<div class="lblock"><h2>' + esc(t.name) + '</h2><p class="hint">' + esc([tripDates(t), t.acts.join(", ")].filter(Boolean).join(" · ")) + "</p>" +
+      (t.note ? '<p class="hint">' + esc(t.note) + "</p>" : "") + (t.resume ? '<p class="why">' + esc(t.resume) + "</p>" : "") + "</div>";
+    if (tp.busy) h += '<p class="note">Je compose ta valise avec ton dressing…</p>';
+    else if (tp.msg) h += '<p class="note warn">' + esc(tp.msg) + "</p>";
+    if (p.total) h += '<div class="fillp"><div class="fprog"><b>' + p.done + " / " + p.total + "</b><span>emballées" + (t.away ? " · parti" : "") + '</span></div><div class="fbar"><i style="width:' + Math.round(p.done / p.total * 100) + '%"></i></div></div>';
+    order.forEach(function (c) {
+      h += '<div class="lblock tpgrp"><h2>' + esc(c) + " <small>" + by[c].length + "</small></h2>" + by[c].map(function (it) {
+        var on = pk.has(it.id);
+        return '<div class="tprow"><button class="lrow tpchk" type="button" data-tp-pack="' + esc(it.id) + '" aria-pressed="' + on + '"><span class="mini">' + thumbImg(it) + '</span><span class="lt"><b>' + esc(it.name || "Sans nom") + "</b><small>" + esc(t.why[it.id] || it.brand || it.kind || "") + '</small></span><span class="lr"><span class="cbx">' + ic("check") + '</span></span></button><button class="tpx" type="button" data-tp-drop="' + esc(it.id) + '" aria-label="Retirer de la valise">×</button></div>';
+      }).join("") + "</div>";
+    });
+    h += '<div class="actions"><button class="btn" type="button" data-tp="add">+ Ajouter une pièce</button>' + (sample ? '<button class="btn" type="button" data-tp="regen"' + (tp.busy ? " disabled" : "") + ">" + (its.length ? "Recomposer" : "Composer avec ton dressing") + "</button>" : "") + "</div>";
+    h += '<div class="lblock tpgrp"><h2>Autres affaires <small>' + t.extras.length + "</small></h2>" + t.extras.map(function (x, i) {
+      return '<div class="tprow"><button class="lrow tpchk" type="button" data-tp-x="' + i + '" aria-pressed="' + x.d + '"><span class="lt"><b>' + esc(x.t) + '</b></span><span class="lr"><span class="cbx">' + ic("check") + '</span></span></button><button class="tpx" type="button" data-tp-xdel="' + i + '" aria-label="Retirer">×</button></div>';
+    }).join("") + '<div class="tpadd"><input id="tpExtra" type="text" maxlength="60" placeholder="Chargeur, passeport, crème solaire…" autocomplete="off"><button class="btn small" type="button" data-tp="xadd">Ajouter</button></div></div>';
+    if (t.manque.length) h += '<div class="lblock"><h2>À prévoir</h2><p class="hint">Ce qui te manque pour ce voyage. Touche pour le mettre en wishlist.</p><div class="chips">' + t.manque.map(function (m, i) { return '<button class="chip" type="button" data-tp-wish="' + i + '">' + esc(m) + "</button>"; }).join("") + "</div></div>";
+    h += '<div class="lblock"><div class="actions">' + (t.away
+      ? '<button class="btn primary" type="button" data-tp="back-home">Retour : tout remettre à la maison</button>'
+      : '<button class="btn primary" type="button" data-tp="depart"' + (its.length ? "" : " disabled") + ">Je pars : ranger ces pièces en voyage</button>") + "</div>" +
+      '<p class="hint">' + (t.away ? "Les pièces sont rangées en voyage : elles n'entrent plus dans les tenues du jour." : "En partant, ces pièces sortent des tenues proposées. Tu les remets d'un geste au retour.") + "</p>" +
+      '<div class="actions"><button class="btn danger" type="button" data-tp="del">' + (tp.delAsk ? "Confirmer : supprimer la valise" : "Supprimer la valise") + "</button></div></div>";
+    return h;
+  }
+  async function tripSave(t, patch) {
+    Object.assign(t, patch);
+    renderTrip();
+    try { await tripsCol.doc(t.id).update(patch); } catch (e) { toast("Enregistrement impossible. Réessaie dans un instant."); }
+  }
+  function openTripForm() {
+    var body = openDlg("Nouvelle valise");
+    var td = todayStr();
+    body.innerHTML = '<div class="field"><label for="tpDest">Destination</label><input id="tpDest" type="text" maxlength="60" placeholder="Galápagos, Chamonix, Lisbonne…" autocomplete="off"></div>' +
+      '<div class="two"><div class="field"><label for="tpFrom">Départ</label><input id="tpFrom" type="date" min="' + td + '"></div><div class="field"><label for="tpTo">Retour</label><input id="tpTo" type="date" min="' + td + '"></div></div>' +
+      '<div class="field"><span class="lab">Au programme</span><div class="chips scroll" id="tpActs">' + TRIP_ACTS.map(function (a) { return '<button class="chip" type="button" data-tpa="' + esc(a) + '" aria-pressed="false">' + esc(a) + "</button>"; }).join("") + "</div></div>" +
+      '<div class="field"><label for="tpNote">Précisions (facultatif)</label><input id="tpNote" type="text" maxlength="120" placeholder="Bagage cabine, mariage le samedi…" autocomplete="off"></div>' +
+      '<p class="hint" id="tpMsg" role="status"></p>' +
+      '<div class="panel-foot"><button class="btn primary" type="button" id="tpGo">' + (sample ? "Créer et composer la valise" : "Créer la valise") + "</button></div>";
+    body.onclick = function (e) {
+      var c = e.target.closest("[data-tpa]");
+      if (c) { c.setAttribute("aria-pressed", c.getAttribute("aria-pressed") === "true" ? "false" : "true"); return; }
+      if (e.target.closest("#tpGo")) createTrip();
+    };
+  }
+  async function createTrip() {
+    var dest = cap($("#tpDest").value), from = $("#tpFrom").value, to = $("#tpTo").value, msg = $("#tpMsg");
+    if (!dest) { msg.textContent = "Indique une destination."; return; }
+    if (!from || !to) { msg.textContent = "Indique les dates de départ et de retour."; return; }
+    if (to < from) { msg.textContent = "Le retour est avant le départ."; return; }
+    var acts = Array.prototype.map.call(document.querySelectorAll("#tpActs [aria-pressed=true]"), function (b) { return b.getAttribute("data-tpa"); });
+    var data = { name: dest, dest: dest, from: from, to: to, acts: acts, note: $("#tpNote").value.trim(), ids: [], packed: [], why: {}, extras: [], manque: [], resume: "", away: false, prev: {}, createdAt: Date.now() };
+    var ref = tripsCol.doc();
+    try { await ref.set(data); } catch (e) { msg.textContent = "Création impossible. Réessaie dans un instant."; return; }
+    closeDlg();
+    tp.cur = ref.id; tp.msg = ""; tp.delAsk = false;
+    setView("trip");
+    if (sample) composeTrip(ref.id);
+  }
+  async function composeTrip(id) {
+    var t = tripById(id) || null;
+    if (!t) { await new Promise(function (r) { setTimeout(r, 300); }); t = tripById(id); }
+    if (!t || !sample || tp.busy) return;
+    var pool = items.filter(function (it) { return isLive(it) && (atHome(it) || t.ids.indexOf(it.id) >= 0); }).slice(0, 250);
+    if (pool.length < 3) { tp.msg = "Ajoute au moins 3 pièces à ton dressing pour que je compose la valise."; renderTrip(); return; }
+    var codes = {}, lines = pool.map(function (it, i) {
+      var c = "p" + (i + 1); codes[c] = it;
+      return [c, it.name || "sans nom", it.kind || it.category || "?", it.colors.join("/") || "?", it.material || "?", it.seasons.join("/") || "toutes", "porté " + wearsOf(it) + " fois"].join(" | ");
+    }).join("\n");
+    var n = tripNights(t);
+    var prompt = "Tu m'aides à préparer ma valise. Voyage : " + t.dest + ", du " + t.from + " au " + t.to + " (" + plural(n, "nuit") + "). Date du jour : " + todayStr() + "." +
+      (t.acts.length ? " Au programme : " + t.acts.join(", ") + "." : "") + (t.note ? " Précisions : " + t.note + "." : "") + "\n\n" +
+      "Mon dressing disponible (code | nom | type | couleurs | matière | saisons | usage) :\n" + lines + "\n\n" +
+      "Consigne : choisis dans ce dressing, avec les codes uniquement, les pièces à emporter. Tiens compte du climat habituel de " + t.dest + " à cette période de l'année et des activités. Vise un ensemble cohérent, dont les pièces se combinent entre elles, pour pouvoir rejouer les mêmes pièces. " +
+      "Repères de quantité pour " + plural(Math.min(n, 7), "jour") + " d'autonomie (au-delà, je lave sur place) : hauts environ un pour 1,5 jour (8 maximum), bas environ un pour 3 jours (4 maximum), une ou deux vestes selon la météo, deux ou trois paires de chaussures au maximum, des accessoires seulement s'ils servent. Ne mets pas de pièce inutile.\n" +
+      "Ajoute aussi \"essentiels\" : 6 à 10 affaires hors vêtements à ne pas oublier pour ce voyage (documents, adaptateur, produits solaires, médicaments courants, etc.), en quelques mots chacune. Et \"manque\" : 0 à 4 pièces vraiment utiles pour ce voyage que je n'ai pas dans le dressing, en quelques mots chacune, ou une liste vide.\n" +
+      "Réponds uniquement avec un objet JSON : {\"resume\": \"une phrase sur le climat et l'esprit de la valise\", \"pieces\": [{\"c\": \"p3\", \"why\": \"cinq mots maximum\"}], \"essentiels\": [\"...\"], \"manque\": [\"...\"]}";
+    tp.busy = true; tp.msg = ""; renderTrip();
+    tp.ctl = new AbortController();
+    try {
+      var r = await sample.json(prompt, { modelTier: "default", signal: tp.ctl.signal, cache: false });
+      var seen = new Set(), ids = [], why = {};
+      (Array.isArray(r && r.pieces) ? r.pieces : []).forEach(function (x) {
+        var it = codes[String(x && x.c)];
+        if (it && !seen.has(it.id) && ids.length < 30) { seen.add(it.id); ids.push(it.id); if (x.why) why[it.id] = String(x.why).slice(0, 60); }
+      });
+      if (!ids.length) throw Object.assign(new Error("empty"), { code: "invalid_json" });
+      var cur = tripById(id) || t;
+      var ex = cur.extras.slice(), have = new Set(ex.map(function (x) { return x.t.toLowerCase(); }));
+      (Array.isArray(r.essentiels) ? r.essentiels : []).slice(0, 10).forEach(function (x) {
+        x = String(x || "").trim().slice(0, 60);
+        if (x && !have.has(x.toLowerCase())) { have.add(x.toLowerCase()); ex.push({ t: x, d: false }); }
+      });
+      var patch = {
+        ids: ids, why: why, packed: cur.packed.filter(function (i) { return seen.has(i); }), extras: ex,
+        manque: (Array.isArray(r.manque) ? r.manque : []).map(function (m) { return String(m || "").trim().slice(0, 60); }).filter(Boolean).slice(0, 4),
+        resume: String(r.resume || "").slice(0, 220)
+      };
+      Object.assign(cur, patch);
+      await tripsCol.doc(id).update(patch);
+    } catch (e) { tp.msg = e && e.code === "cancelled" ? "" : aiMsg(e); }
+    tp.busy = false; tp.ctl = null; renderTrip();
+  }
+  async function tripDepart(t, away) {
+    var ids = t.ids.filter(function (id) { return itemById(id); });
+    var prev = Object.assign({}, t.prev);
+    if (away) {
+      ids.forEach(function (id) { var it = itemById(id); if (!prev[id]) prev[id] = [it.location, it.bag]; });
+      await moveMany(ids, "En voyage", t.name);
+    } else {
+      for (var i = 0; i < ids.length; i++) {
+        var p = prev[ids[i]], it = itemById(ids[i]);
+        if (it && norm(it.location) === "en voyage") {
+          try { await itemsCol.doc(ids[i]).update({ location: p ? p[0] : "Maison", bag: p ? p[1] : "" }); } catch (e) { /* on continue */ }
+        }
+      }
+      prev = {};
+    }
+    await tripSave(t, { away: away, prev: prev });
+    toast(away ? "Bon voyage. Les pièces sont rangées en voyage." : "Bon retour. Les pièces sont remises en place.");
+  }
+  function openTripPicker(t) {
+    var body = openDlg("Ajouter à la valise");
+    function list(q) {
+      q = norm(q).trim();
+      var pool = items.filter(function (it) { return isLive(it) && t.ids.indexOf(it.id) < 0 && (!q || norm([it.name, it.kind, it.brand, it.category].join(" ")).indexOf(q) >= 0); }).slice(0, 60);
+      return pool.length ? '<div class="lrows">' + pool.map(function (it) {
+        return '<button class="lrow" type="button" data-tpp="' + esc(it.id) + '"><span class="mini">' + thumbImg(it) + '</span><span class="lt"><b>' + esc(it.name || "Sans nom") + "</b><small>" + esc([it.brand, it.kind || it.category].filter(Boolean).join(" · ")) + "</small></span></button>";
+      }).join("") + "</div>" : '<p class="note">Aucune pièce ne correspond.</p>';
+    }
+    body.innerHTML = '<div class="field"><input id="tppQ" type="search" placeholder="Pièce, marque, type…" autocomplete="off"></div><div id="tppList">' + list("") + "</div>";
+    body.oninput = function (e) { if (e.target.id === "tppQ") $("#tppList").innerHTML = list(e.target.value); };
+    body.onclick = async function (e) {
+      var b = e.target.closest("[data-tpp]"); if (!b) return;
+      var id = b.getAttribute("data-tpp"), cur = tripById(t.id); if (!cur || cur.ids.indexOf(id) >= 0) return;
+      var patch = { ids: cur.ids.concat([id]) };
+      if (cur.away) { var it = itemById(id); if (it) { var pv = Object.assign({}, cur.prev); pv[id] = [it.location, it.bag]; patch.prev = pv; await moveMany([id], "En voyage", cur.name); } }
+      b.remove();
+      await tripSave(cur, patch);
+      toast("Ajoutée à la valise.");
+    };
+  }
+  $("#v-trip").addEventListener("click", async function (e) {
+    var b;
+    if ((b = e.target.closest("[data-tp-open]"))) { tp.cur = b.getAttribute("data-tp-open"); tp.msg = ""; tp.delAsk = false; renderTrip(); window.scrollTo(0, 0); return; }
+    var t = tp.cur ? tripById(tp.cur) : null;
+    if ((b = e.target.closest("[data-tp-pack]")) && t) {
+      var id = b.getAttribute("data-tp-pack"), pk = t.packed.slice(), k = pk.indexOf(id);
+      if (k >= 0) pk.splice(k, 1); else pk.push(id);
+      tripSave(t, { packed: pk }); return;
+    }
+    if ((b = e.target.closest("[data-tp-x]")) && t) { var xs = t.extras.map(function (x) { return { t: x.t, d: x.d }; }), xi = +b.getAttribute("data-tp-x"); if (xs[xi]) { xs[xi].d = !xs[xi].d; tripSave(t, { extras: xs }); } return; }
+    if ((b = e.target.closest("[data-tp-xdel]")) && t) { var xs2 = t.extras.slice(); xs2.splice(+b.getAttribute("data-tp-xdel"), 1); tripSave(t, { extras: xs2 }); return; }
+    if ((b = e.target.closest("[data-tp-drop]")) && t) {
+      var did = b.getAttribute("data-tp-drop"), patch = { ids: t.ids.filter(function (i) { return i !== did; }), packed: t.packed.filter(function (i) { return i !== did; }) };
+      if (t.away && t.prev[did]) {
+        var it = itemById(did), pv = Object.assign({}, t.prev), p0 = pv[did]; delete pv[did]; patch.prev = pv;
+        if (it && norm(it.location) === "en voyage") { try { await itemsCol.doc(did).update({ location: p0[0], bag: p0[1] }); } catch (er) { /* on continue */ } }
+      }
+      tripSave(t, patch); return;
+    }
+    if ((b = e.target.closest("[data-tp-wish]")) && t) {
+      var txt = t.manque[+b.getAttribute("data-tp-wish")]; if (!txt || !itemsCol) return;
+      try {
+        await itemsCol.doc().set({ name: cap(txt), category: "", kind: "", colors: [], material: "", seasons: [], tags: [], brand: "", size: "", notes: "Pour le voyage : " + t.name, price: null, value: null, purchaseDate: "", condition: "", status: "envie", soldPrice: null, location: "Maison", bag: "", wearsOffset: 0, reviewed: false, createdAt: Date.now() });
+        b.remove(); toast("Dans ta wishlist.");
+      } catch (er) { toast("Ajout impossible. Réessaie dans un instant."); }
+      return;
+    }
+    b = e.target.closest("[data-tp]"); if (!b) return;
+    var a = b.getAttribute("data-tp");
+    if (a === "back") { if (tp.cur) { tp.cur = ""; tp.msg = ""; tp.delAsk = false; renderTrip(); } else setView("home"); return; }
+    if (a === "new") { openTripForm(); return; }
+    if (!t) return;
+    if (a === "add") openTripPicker(t);
+    else if (a === "regen") composeTrip(t.id);
+    else if (a === "xadd") { var inp = $("#tpExtra"), v = inp.value.trim().slice(0, 60); if (v) { inp.value = ""; tripSave(t, { extras: t.extras.concat([{ t: v, d: false }]) }); } }
+    else if (a === "depart") tripDepart(t, true);
+    else if (a === "back-home") tripDepart(t, false);
+    else if (a === "del") {
+      if (!tp.delAsk) { tp.delAsk = true; renderTrip(); return; }
+      if (t.away) await tripDepart(t, false);
+      try { await tripsCol.doc(t.id).delete(); tp.cur = ""; tp.delAsk = false; toast("Valise supprimée."); } catch (er) { toast("Suppression impossible. Réessaie dans un instant."); }
+      renderTrip();
+    }
+  });
+  $("#v-trip").addEventListener("keydown", function (e) { if (e.key === "Enter" && e.target.id === "tpExtra") { e.preventDefault(); var b = $("#v-trip [data-tp=xadd]"); if (b) b.click(); } });
+
   // ---------- Estimation de la valeur de revente ----------
   var estBusy = false;
   function estLine(it, c) {
@@ -4144,6 +4560,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       else if (a === "zip" && dl) exportZip();
       else if (a === "cutall") cutAll();
       else if (a === "est") openEstimate();
+      else if (a === "declutter") openDeclutter();
       else if (a === "restore") $("#fileRestore").click();
       return;
     }
@@ -4172,12 +4589,17 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     if (!db || !uid) { unavailable = NEEDS; loaded = true; renderAll(); return; }
     itemsCol = db.collection("data/users/" + uid);
     wearsCol = db.doc("data/users/" + uid + "/profile").collection("wears");
+    tripsCol = db.doc("data/users/" + uid + "/profile").collection("trips");
     itemsCol.onSnapshot(function (snap) {
       items = snap.docs.map(function (d) { return normItem(d.id, d.data()); });
       loaded = true; unavailable = "";
       renderAll();
       renderDuo();
     }, function () { unavailable = "Le dressing ne se charge pas pour l'instant. Recharge la page."; loaded = true; renderAll(); });
+    tripsCol.onSnapshot(function (snap) {
+      trips = snap.docs.map(function (d) { return normTrip(d.id, d.data()); });
+      renderAll();
+    }, function () { /* pas de valises pour l'instant */ });
     wearsCol.onSnapshot(function (snap) {
       wears = snap.docs.map(function (d) { return normWear(d.id, d.data()); });
       wearsLoaded = true;
