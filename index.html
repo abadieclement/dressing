@@ -13,7 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Hanken+Grotesk:wght@400..700&display=swap">
+<script>try{var _f=JSON.parse(localStorage.getItem("dressing.font"));if(_f)document.documentElement.setAttribute("data-font",_f)}catch(e){}</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Hanken+Grotesk:wght@400..700&family=Fraunces:opsz,wght@9..144,500..800&family=DM+Sans:opsz,wght@9..40,400..700&family=Space+Grotesk:wght@500..700&family=Inter:wght@400..700&family=Outfit:wght@500..800&family=Plus+Jakarta+Sans:wght@400..700&display=swap">
 <style>
 /* Direction : atelier de couture. Aplats, trait fin, coins serrés, coutures pointillées, sergé du denim sur le bandeau, mètre ruban, étiquette tissée pour la taille. Pas de dégradés ni de reflets.  Grand titre par onglet, barre d'onglets en bas, bouton photo jaune "mètre de couturière", fiches en feuilles plein écran. Signature : la taille s'affiche comme une étiquette jaune, et se choisit sur un mètre ruban. */
 :root {
@@ -562,7 +563,8 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
 .railwrap::before { content: ""; position: absolute; left: 0; right: 0; top: 2px; height: 3px; border-radius: 2px; background: color-mix(in srgb, var(--ink) 32%, transparent); }
 .rail { position: relative; display: flex; gap: 12px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scroll-padding-inline: var(--bgl); padding: 0 var(--bgl) 14px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .rail::-webkit-scrollbar { display: none; }
-.hang { flex: none; width: 128px; display: flex; flex-direction: column; border: 0; background: none; padding: 0; text-align: left; color: inherit; scroll-snap-align: start; transform: rotate(var(--sway, 0deg)); transform-origin: 50% 0; transition: transform .5s cubic-bezier(.22, 1.7, .45, 1); transition-delay: calc(var(--k, 0) * 16ms); }
+.hang { flex: none; width: 128px; display: flex; flex-direction: column; border: 0; background: none; padding: 0; text-align: left; color: inherit; scroll-snap-align: start; transform: rotate(var(--sway, 0deg)); transform-origin: 50% 0; }
+.rail.moving .hang { will-change: transform; }
 .hang .hook { width: 30px; height: 22px; margin: 0 auto -3px; color: var(--muted); stroke-width: 1.6; }
 .hang .ph { position: relative; display: block; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--surface2); box-shadow: var(--shadow); }
 .hang .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -572,7 +574,17 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
 .hang .br { font-size: 12px; font-weight: 700; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hang .br.miss { color: var(--warn); }
 .hang .nm { font-size: 14px; font-weight: 650; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-@media (prefers-reduced-motion: reduce) { .hang { transform: none; transition: none; } }
+@media (prefers-reduced-motion: reduce) { .hang { transform: none; } }
+html[data-font="serif"] { --font-display: 'Fraunces', Georgia, serif; --font-body: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+html[data-font="tech"] { --font-display: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif; --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+html[data-font="round"] { --font-display: 'Outfit', 'Helvetica Neue', Arial, sans-serif; --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+html[data-font="serif"] :is(h1, h2, h3, .big, .v, .stamp, .stampi, .bigbtn, .tapebar button, .av, .bt b) { letter-spacing: -0.015em; font-weight: 700; }
+html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
+.fontopt { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 12px 16px; border: 2px solid transparent; border-radius: 20px; background: var(--bg); text-align: left; color: inherit; }
+.fontopt[aria-pressed="true"] { border-color: var(--accent); }
+.fontopt .fs { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+.fontopt .fb { font-size: 14px; color: var(--muted); }
+.fontopt small { font-size: 12px; font-weight: 700; color: var(--accent); }
 
 /* Mannequin */
 .avatar { position: relative; display: flex; justify-content: center; align-items: flex-end; background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); padding: 16px 0 8px; outline: 1.5px dashed var(--line); outline-offset: -7px; }
@@ -1602,6 +1614,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       ["manual", "pencil", "Créer une fiche à la main", "Sans photo, ou pour une pièce d'une marque précise.", off],
       ["wish", "tag", "Ajouter à la wishlist", "Une pièce vue en magasin que tu ne prends pas tout de suite. Hors stock, hors valeur.", off],
       ["autocut", "image", "Détourage automatique : " + (autoCutOn() ? "activé" : "désactivé"), "Les nouvelles photos sont détourées en arrière-plan (50 Mo à la première fois).", off],
+      ["font", "pencil", "Typographie", "Change les polices de l'app. Essaie les quatre sur ton téléphone.", false],
       ["declutter", "check", "Désencombrer", "Garder, vendre ou donner, pièce par pièce. Les plus chères d'abord.", off || !items.length],
       ["trip", "box", "Valise", "Préparer un voyage avec les pièces de ton dressing.", off || !items.length],
       ["bag", "box", "Faire un sac", "Sélectionne des pièces à descendre à la cave.", off || !items.length],
@@ -1620,10 +1633,29 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
       else if (a === "manual") openSheet(null);
       else if (a === "wish") openWish();
       else if (a === "trip") { tp.cur = ""; setView("trip"); }
+      else if (a === "font") openFonts();
       else if (a === "declutter") openDeclutter();
       else if (a === "autocut") { LS.set("dressing.autocut", !autoCutOn()); toast("Détourage automatique " + (autoCutOn() ? "activé." : "désactivé.")); }
       else if (a === "bag") startBag();
       else if (a === "places") openPlaces();
+    };
+  }
+  var FONTS = [["", "Atelier", "Bricolage Grotesque + Hanken Grotesk", "Le style actuel : titres larges et serrés."],
+    ["serif", "Éditorial", "Fraunces + DM Sans", "Titres à empattements, plus magazine de mode."],
+    ["tech", "Net", "Space Grotesk + Inter", "Sobre, précis, un peu technique."],
+    ["round", "Doux", "Outfit + Plus Jakarta Sans", "Géométrique et arrondi, très lisible."]];
+  function openFonts() {
+    var cur = document.documentElement.getAttribute("data-font") || "";
+    var body = openDlg("Typographie");
+    body.innerHTML = '<div class="menu">' + FONTS.map(function (f) {
+      return '<button class="fontopt" type="button" data-font="' + f[0] + '" aria-pressed="' + (f[0] === cur) + '" style="' + (f[0] ? "" : "") + '"><span class="fs" style="font-family:' + (f[0] === "serif" ? "'Fraunces',Georgia,serif;font-weight:700;letter-spacing:-.015em" : f[0] === "tech" ? "'Space Grotesk',sans-serif" : f[0] === "round" ? "'Outfit',sans-serif" : "'Bricolage Grotesque',sans-serif") + '">' + esc(f[1]) + '</span><span class="fb">' + esc(f[2]) + " · " + esc(f[3]) + "</span></button>";
+    }).join("") + "</div>";
+    body.onclick = function (e) {
+      var b = e.target.closest("[data-font]"); if (!b) return;
+      var v = b.getAttribute("data-font");
+      if (v) document.documentElement.setAttribute("data-font", v); else document.documentElement.removeAttribute("data-font");
+      LS.set("dressing.font", v || null);
+      Array.prototype.forEach.call(body.querySelectorAll(".fontopt"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
     };
   }
   function startBag() {
@@ -2734,14 +2766,26 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
     var h = e.target.closest(".hang"); if (h) openSheet(h.getAttribute("data-id"));
   });
   (function () {
-    var last = new WeakMap(), timer = new WeakMap();
+    // Balancement des cintres : un ressort calculé à chaque image, sans transition CSS
+    var st = new WeakMap(), reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    function step(r, s) {
+      var now = performance.now();
+      if (now - s.t > 60) s.target = 0;
+      s.v += (s.target - s.a) * 0.16;
+      s.v *= s.target === 0 ? 0.86 : 0.7;
+      s.a += s.v;
+      var rest = s.target === 0 && Math.abs(s.a) < 0.03 && Math.abs(s.v) < 0.03;
+      r.style.setProperty("--sway", (rest ? 0 : s.a).toFixed(2) + "deg");
+      if (rest) { s.raf = 0; r.classList.remove("moving"); return; }
+      s.raf = requestAnimationFrame(function () { step(r, s); });
+    }
     ["#rails", "#sRails"].forEach(function (sel) {
       $(sel).addEventListener("scroll", function (e) {
-        var r = e.target; if (!r.classList || !r.classList.contains("rail")) return;
-        var x = r.scrollLeft, d = x - (last.get(r) || 0); last.set(r, x);
-        r.style.setProperty("--sway", Math.max(-10, Math.min(10, -d * 0.7)).toFixed(1) + "deg");
-        clearTimeout(timer.get(r));
-        timer.set(r, setTimeout(function () { r.style.setProperty("--sway", "0deg"); }, 70));
+        var r = e.target; if (reduce || !r.classList || !r.classList.contains("rail")) return;
+        var s = st.get(r); if (!s) { s = { x: r.scrollLeft, a: 0, v: 0, target: 0, t: 0, raf: 0 }; st.set(r, s); }
+        var x = r.scrollLeft, d = x - s.x; s.x = x;
+        if (d) { s.target = Math.max(-9, Math.min(9, -d * 0.6)); s.t = performance.now(); }
+        if (!s.raf) { r.classList.add("moving"); s.raf = requestAnimationFrame(function () { step(r, s); }); }
       }, true);
     });
   })();
