@@ -1,7 +1,7 @@
 /* Service worker : ouverture hors ligne et photos en cache. */
 importScripts("config.js");
 var CFG = self.DRESSING_CONFIG || {};
-var VERSION = "dressing-v1";
+var VERSION = "dressing-v2";
 var PHOTOS = "dressing-photos-v1";
 var SHELL = ["./", "index.html", "config.js", "shim.js", "vendor/supabase.js", "vendor/jszip.min.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png"];
 
@@ -26,7 +26,7 @@ function photo(req, path) {
   });
 }
 function shell(req) {
-  return fetch(req).then(function (r) {
+  return fetch(req, { cache: "no-cache" }).then(function (r) {
     if (r.ok) { var copy = r.clone(); caches.open(VERSION).then(function (c) { c.put(req, copy); }); }
     return r;
   }).catch(function () {
