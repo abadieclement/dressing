@@ -1722,8 +1722,9 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     else if (a === "basics") startBasic();
     else if (a === "settings") { stFrom = "more"; setView("settings"); }
   });
-  var BUILD = { id: "2026.11.01-e", label: "1 novembre 2026" };
+  var BUILD = { id: "2026.11.08-a", label: "8 novembre 2026" };
   var CHANGES = [
+    "Mon style et tendances : tenues et avis d'achat plus personnels, basiques écartés des propositions",
     "Photo de moi : détection des pièces portées, basiques non suivis",
     "Photo depuis l'accueil : dressing, avis avant achat, wishlist ou commande",
     "Quatre onglets : Accueil, Dressing, Tenues, Plus",
@@ -1754,9 +1755,25 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       return '<button class="fontopt" type="button" data-font="' + f[0] + '" aria-pressed="' + (f[0] === cur) + '"><span class="fs" style="font-family:' + FONT_CSS[f[0]] + '">' + esc(f[1]) + '</span><span class="fb">' + esc(f[2]) + " · " + esc(f[3]) + "</span></button>";
     }).join("") + "</div></div>";
     h += '<div class="lblock"><h2>Photos</h2>' + swRow("autocut", "Détourer les nouvelles photos", "En arrière-plan, sur la photo principale (50 Mo à la première fois).", autoCutOn()) + "</div>";
+    var dr = stDraft || { text: styleCfg.text || "", trends: trendsText() }, dv = derivedStyle();
+    h += '<div class="lblock"><h2>Mon style</h2><p class="hint">Deux ou trois lignes, jointes à chaque demande de tenue ou d\'avis d\'achat. Ce qui est écrit ici passe avant les tendances.</p>' +
+      '<div class="field"><textarea id="stStyle" rows="3" maxlength="400" placeholder="Ex : sobre, tons sombres, pas de logos, casual chic le week-end">' + esc(dr.text) + "</textarea></div>" +
+      (dv ? '<p class="hint">Ce que je lis dans ton dressing : ' + esc(dv) + "</p>" : "") +
+      '<div class="actions"><button class="btn" type="button" data-st="savestyle">Enregistrer mon style</button></div></div>';
+    h += '<div class="lblock"><h2>Tendances</h2><p class="hint">Relevé ' + esc(TRENDS_DATE) + ". Elles servent à l'avis avant achat. Tu peux corriger le texte.</p>" +
+      swRow("trendsOutfits", "Aussi pour les tenues proposées", "Désactivé : les tenues ne dépendent que de ton dressing et de ton style.", !!styleCfg.trendsOutfits) +
+      '<div class="field"><textarea id="stTrends" rows="9" maxlength="1500">' + esc(dr.trends) + "</textarea></div>" +
+      '<div class="actions"><button class="btn" type="button" data-st="savetrends">Enregistrer les tendances</button><button class="btn" type="button" data-st="resettrends">Remettre le relevé de l\'app</button></div></div>';
     h += '<div class="lblock"><h2>Version</h2><p class="hint">Version ' + esc(BUILD.id) + " du " + esc(BUILD.label) + '.</p><ul class="chg">' + CHANGES.map(function (c) { return "<li>" + esc(c) + "</li>"; }).join("") + '</ul><div class="actions"><button class="btn" type="button" data-st="reload">Vérifier les mises à jour et recharger</button></div></div>';
     setHtml(el, h);
   }
+  function await_(p) { return p; }
+  $("#v-settings").addEventListener("input", function (e) {
+    var id = e.target && e.target.id;
+    if (id !== "stStyle" && id !== "stTrends") return;
+    stDraft = stDraft || { text: styleCfg.text || "", trends: trendsText() };
+    if (id === "stStyle") stDraft.text = e.target.value; else stDraft.trends = e.target.value;
+  });
   $("#v-settings").addEventListener("click", function (e) {
     var b = e.target.closest("[data-font]");
     if (b) { applyFont(b.getAttribute("data-font")); renderSettings(); return; }
@@ -1764,11 +1781,20 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     if (b) {
       var k = b.getAttribute("data-sw");
       if (k === "autocut") LS.set("dressing.autocut", !autoCutOn());
+      else if (k === "trendsOutfits") { await_(saveStyle({ trendsOutfits: !styleCfg.trendsOutfits })); }
       renderSettings(); return;
     }
     b = e.target.closest("[data-st]"); if (!b) return;
     var a = b.getAttribute("data-st");
-    if (a === "back") setView(stFrom && stFrom !== "settings" ? stFrom : "more");
+    if (a === "savestyle") {
+      var t1 = ($("#stStyle").value || "").trim().slice(0, 400);
+      saveStyle({ text: t1 }).then(function (ok) { if (ok) { stDraft = null; toast("Style enregistré."); renderSettings(); } });
+    } else if (a === "savetrends") {
+      var t2 = ($("#stTrends").value || "").trim().slice(0, 1500);
+      saveStyle({ trends: t2 === DEFAULT_TRENDS ? null : t2 }).then(function (ok) { if (ok) { stDraft = null; toast("Tendances enregistrées."); renderSettings(); } });
+    } else if (a === "resettrends") {
+      saveStyle({ trends: null }).then(function (ok) { if (ok) { stDraft = null; toast("Relevé de l'app rétabli."); renderSettings(); } });
+    } else if (a === "back") setView(stFrom && stFrom !== "settings" ? stFrom : "more");
     else if (a === "reload") {
       toast("Recherche d'une mise à jour…");
       var done = function () { location.reload(); };
@@ -2544,7 +2570,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     var ctx = $("#aCtx").value.trim();
     if (!ctx) { setAdviceMsg("Décris l'occasion pour que je choisisse."); return; }
     var onlyHome = $("#aHome").checked, avoid = $("#aAvoid").checked;
-    var pool = items.filter(function (it) { return isLive(it) && (!onlyHome || atHome(it)); });
+    var pool = items.filter(function (it) { return isLive(it) && !isBasic(it) && (!onlyHome || atHome(it)); });
     if (pool.length < 3) { setAdviceMsg(onlyHome ? "Moins de 3 pièces à la maison. Décoche « Seulement ce qui est à la maison » ou complète ton dressing." : "Pas assez de pièces dans ton dressing."); return; }
     var codes = {}, byId = {};
     var lines = pool.map(function (it, i) {
@@ -2565,6 +2591,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       "Mon dressing disponible (code | nom | catégorie | couleurs | matière | saisons | tags | état | usage) :\n" + lines + "\n\n" +
       (liked.length ? "Tenues que j'ai bien notées par le passé, pour comprendre mes goûts :\n" + liked.join("\n") + "\n\n" : "") +
       (recent.length ? "Pièces portées ces 5 derniers jours, à éviter : " + recent.join(", ") + ".\n\n" : "") +
+      styleBlock(styleCfg.trendsOutfits) +
       "Contexte de la demande : " + ctx + "\n" + (wx ? "Météo : " + wxText() + "\n" : "") + "\n" +
       "Propose 3 tenues complètes et vraiment différentes, adaptées au contexte et à la saison. " +
       "Utilise uniquement les codes de la liste. Une tenue contient un haut, un bas (sauf pièce unique), des chaussures, et une veste, un pull ou un accessoire quand c'est utile. " +
@@ -2724,6 +2751,63 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     get: function (k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
     set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* pas de stockage local */ } }
   };
+
+  // ---------- Style et tendances ----------
+  var TRENDS_DATE = "début novembre 2026";
+  var DEFAULT_TRENDS = [
+    "Automne-hiver 2026-27 (défilés de Paris et Milan).",
+    "Coupes : retour d'un classique plus net, jeans plus étroits, manteaux longs sobres ; à côté, tailoring souple et décontracté.",
+    "Couches : veste technique ou coupe-vent sur une pièce habillée, sweat sous manteau.",
+    "Matières : cuir souple, velours, cachemire fin, un peu de fausse fourrure en accent.",
+    "Couleurs : base sobre (marine, gris, bruns), accents riches : rouge, aubergine, moutarde, vert émeraude.",
+    "Pièces : veste en cuir épurée, parka technique ou doudoune, carreaux, bottes de marche, cache-cou.",
+    "Plutôt de défilé, peu portable au quotidien : total look cuir, bermuda long, jogging rentré dans les chaussettes."
+  ].join("\n");
+  var styleCfg = (function () { var c = LS.get("dressing.style"); return c && typeof c === "object" ? c : { text: "", trends: null, trendsOutfits: false }; })();
+  var prefsCol = null, stDraft = null;
+  function trendsText() { return typeof styleCfg.trends === "string" ? styleCfg.trends : DEFAULT_TRENDS; }
+  function topCounts(arr, n) {
+    var m = {};
+    arr.forEach(function (x) { if (x) m[x] = (m[x] || 0) + 1; });
+    return Object.keys(m).sort(function (a, b) { return m[b] - m[a]; }).slice(0, n);
+  }
+  function derivedStyle() {
+    var live = items.filter(function (it) { return isLive(it) && !isBasic(it); });
+    if (live.length < 5) return "";
+    var nm = function (it) { return it.name || it.kind || it.category || "pièce"; };
+    var worn = live.filter(function (it) { return wearsOf(it) > 0; }).sort(function (a, b) { return wearsOf(b) - wearsOf(a); }).slice(0, 6).map(function (it) { return nm(it) + " (" + wearsOf(it) + " fois)"; });
+    var kept = live.filter(function (it) { return it.keptAt; }).slice(0, 6).map(nm);
+    var cols = topCounts([].concat.apply([], live.map(function (it) { return it.colors || []; })), 4);
+    var mats = topCounts(live.map(function (it) { return it.material; }), 3);
+    var parts = [];
+    if (cols.length) parts.push("couleurs dominantes : " + cols.join(", "));
+    if (mats.length) parts.push("matières dominantes : " + mats.join(", "));
+    if (worn.length) parts.push("pièces les plus portées : " + worn.join(", "));
+    if (kept.length) parts.push("pièces que j'ai choisi de garder : " + kept.join(", "));
+    return parts.length ? parts.join(". ") + "." : "";
+  }
+  function styleBlock(withTrends) {
+    var s = "", d = derivedStyle(), t = String(styleCfg.text || "").trim();
+    if (t) s += "Mon style, dit par moi (prioritaire) : " + t + "\n";
+    if (d) s += "Mon style observé dans mon dressing : " + d + "\n";
+    var tr = withTrends ? trendsText().trim() : "";
+    if (tr) s += "Tendances de la saison, à utiliser avec parcimonie, seulement quand elles vont avec mes pièces et mon style, jamais pour sortir de ma garde-robe :\n" + tr + "\n";
+    return s ? s + "\n" : "";
+  }
+  function styleSig() {
+    var s = String(styleCfg.text || "") + "|" + (styleCfg.trendsOutfits ? trendsText() : ""), h = 0;
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36);
+  }
+  async function saveStyle(patch) {
+    styleCfg = Object.assign({}, styleCfg, patch);
+    LS.set("dressing.style", styleCfg);
+    if (prefsCol) {
+      try { await prefsCol.doc("style").set({ text: styleCfg.text || "", trends: typeof styleCfg.trends === "string" ? styleCfg.trends : null, trendsOutfits: !!styleCfg.trendsOutfits, updatedAt: Date.now() }); }
+      catch (e) { toast("Enregistré sur cet appareil seulement. Réessaie dans un instant."); return false; }
+    }
+    return true;
+  }
   var city = LS.get("dressing.city") || { name: "Paris", lat: 48.8566, lon: 2.3522 };
   var wx = null, wxState = "loading", wxEdit = false, wxMsg = "", wxDraft = LS.get("dressing.wxlast") || { sky: "cloud", temp: 12 };
   var home = { list: [], idx: 0, busy: false, msg: "", tried: "", noWx: false };
@@ -2807,7 +2891,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     }
     setHtml(el, h);
   }
-  function poolHome() { return items.filter(function (it) { return isLive(it) && atHome(it); }); }
+  function poolHome() { return items.filter(function (it) { return isLive(it) && !isBasic(it) && atHome(it); }); }
   function renderLook() { renderLookCard(); renderAvatarHome(); }
   function renderLookCard() {
     var el = $("#hLook"), h;
@@ -2846,7 +2930,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     $("#hWishTxt").textContent = plural(wn, "pièce") + " dans ta wishlist.";
     maybeAuto();
   }
-  function homeKey() { return todayStr() + "|" + (wx ? Math.round(wx.temp / 3) + (wx.pmax >= 40 ? "r" : "d") : "n"); }
+  function homeKey() { return todayStr() + "|" + (wx ? Math.round(wx.temp / 3) + (wx.pmax >= 40 ? "r" : "d") : "n") + "|" + styleSig(); }
   function validTenues(list) {
     return (list || []).filter(function (t) { return t && t.items && t.items.length >= 2 && t.items.every(function (id) { var it = itemById(id); return it && isLive(it); }); });
   }
@@ -2884,6 +2968,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       "Mon dressing disponible (code | nom | catégorie | couleurs | matière | saisons | tags | état | usage) :\n" + lines + "\n\n" +
       (liked.length ? "Tenues que j'ai bien notées par le passé, pour comprendre mes goûts :\n" + liked.join("\n") + "\n\n" : "") +
       (recent.length ? "Pièces portées ces 5 derniers jours, à éviter : " + recent.join(", ") + ".\n\n" : "") +
+      styleBlock(styleCfg.trendsOutfits) +
       "Demande : la tenue du jour, pour une journée normale en ville, sans occasion particulière.\n" +
       "Propose 3 tenues complètes et vraiment différentes. Utilise uniquement les codes de la liste. Une tenue contient un haut, un bas (sauf pièce unique), des chaussures, et une veste, un pull ou un accessoire quand c'est utile. Ne mets pas ensemble des pièces qui jurent.\n" +
       (wx ? "Adapte-les à la météo : sous 10° des couches chaudes (pull, manteau) ; entre 10° et 18° une couche intermédiaire ; au-dessus de 22° des pièces légères. Si le risque de pluie est de 40 % ou plus, une veste ou un manteau qui tient la pluie et des chaussures qui craignent peu l'eau (pas de daim, pas de toile claire). Si l'écart entre le minimum et le maximum dépasse 8°, une couche qu'on peut enlever.\n" : "") +
@@ -2995,7 +3080,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   async function runBuy(file) {
     setBuyPick(null);
     if (!sample) { setBuyMsg("Claude n'est pas disponible pour le moment."); return; }
-    var pool = items.filter(isLive).slice(0, 250);
+    var pool = items.filter(function (it) { return isLive(it) && !isBasic(it); }).slice(0, 250);
     if (pool.length < 3) { setBuyMsg("Ajoute au moins 3 pièces à ton dressing pour que je puisse comparer."); return; }
     var blob;
     try { blob = await toJpeg(file, 900, 0.82); } catch (e) { setBuyMsg("Cette photo est illisible. Essaie-en une autre."); return; }
@@ -3018,11 +3103,12 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       "Mon dressing actuel (code | nom | type | couleurs | matière | saisons | usage | lieu) :\n" + lines + "\n\n" +
       (liked.length ? "Tenues que j'ai bien notées par le passé, pour comprendre mes goûts :\n" + liked.join("\n") + "\n\n" : "") +
       (wx ? "Météo du moment : " + wxText() + "\n\n" : "") +
+      styleBlock(true) +
       "Ton travail :\n" +
       "1. Décris la pièce de la photo en quelques mots (type, couleur, style).\n" +
       "2. Repère les doublons : les pièces de mon dressing qui font déjà le même travail (même type et couleur proche, ou même usage). Jusqu'à 3 codes, liste vide s'il n'y en a pas.\n" +
       "3. Compose 2 ou 3 tenues complètes et différentes qui utilisent la pièce de la photo avec des pièces de mon dressing. Donne seulement les codes des pièces de mon dressing, sans la nouvelle pièce. Si tu ne trouves pas au moins 2 tenues crédibles, renvoie moins de tenues, ou aucune.\n" +
-      "4. Donne un verdict franc : \"oui\" si la pièce comble un vrai manque et s'associe à beaucoup de mes pièces ; \"plutot_oui\" ; \"plutot_non\" si c'est un doublon partiel ou si elle s'associe à peu de pièces ; \"non\" si c'est un doublon net ou si elle ne va avec rien. Des pièces du même type que je porte peu sont un argument contre l'achat.\n" +
+      "4. Donne un verdict franc : \"oui\" si la pièce comble un vrai manque et s'associe à beaucoup de mes pièces ; \"plutot_oui\" ; \"plutot_non\" si c'est un doublon partiel ou si elle s'associe à peu de pièces ; \"non\" si c'est un doublon net ou si elle ne va avec rien. Des pièces du même type que je porte peu sont un argument contre l'achat. Dans le résumé, dis aussi, en une demi-phrase et seulement si c'est pertinent, si la pièce va avec mon style et avec les tendances de la saison.\n" +
       "Style : direct, sans langue de bois, deux phrases au maximum pour le résumé, pas de formule de politesse.\n" +
       "Si la photo ne montre ni vêtement ni accessoire, réponds {\"verdict\": \"aucun\", \"resume\": \"explication courte\"}.\n" +
       "Réponds uniquement avec un objet JSON : {\"piece\": \"description courte\", \"verdict\": \"oui|plutot_oui|plutot_non|non\", \"resume\": \"deux phrases\", \"doublons\": [\"p3\"], \"tenues\": [{\"titre\": \"nom court\", \"pieces\": [\"p1\", \"p2\"]}]}";
@@ -4889,6 +4975,16 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     itemsCol = db.collection("data/users/" + uid);
     wearsCol = db.doc("data/users/" + uid + "/profile").collection("wears");
     tripsCol = db.doc("data/users/" + uid + "/profile").collection("trips");
+    prefsCol = db.doc("data/users/" + uid + "/profile").collection("prefs");
+    prefsCol.onSnapshot(function (snap) {
+      snap.docs.forEach(function (d) {
+        if (d.id !== "style") return;
+        var x = d.data() || {};
+        styleCfg = { text: String(x.text || ""), trends: typeof x.trends === "string" ? x.trends : null, trendsOutfits: !!x.trendsOutfits };
+        LS.set("dressing.style", styleCfg);
+      });
+      renderAll();
+    }, function () { /* le style reste local */ });
     itemsCol.onSnapshot(function (snap) {
       items = snap.docs.map(function (d) { return normItem(d.id, d.data()); });
       loaded = true; unavailable = "";
