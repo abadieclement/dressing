@@ -92,7 +92,8 @@ section[hidden] { display: none; }
 .btn { min-height: 48px; padding: 0 20px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 650; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform .12s; }
 .btn:active { transform: scale(.97); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-.btn.tape { background: var(--tape); border-color: var(--tape); color: var(--tape-ink); }
+.btn.tape { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.note.act .btn.tape { background: var(--surface); border-color: var(--line); color: var(--ink); }
 .btn.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); background: transparent; }
 .btn.small { min-height: 42px; padding: 0 14px; font-size: 14px; border-radius: 12px; }
 .btn.wide { flex: 1 1 auto; }
@@ -160,7 +161,7 @@ section[hidden] { display: none; }
 .card .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .card .ph-empty { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 64px; color: var(--muted); }
 .card .info { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 12px; min-width: 0; }
-.card .br { font-size: 12.5px; font-weight: 700; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card .br { font-size: 12.5px; font-weight: 700; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card .br.miss { color: var(--warn); }
 .card .nm { font-weight: 650; font-size: 14.5px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .card .sub { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -337,7 +338,7 @@ img[data-cut] { object-fit: contain !important; padding: 6%; box-sizing: border-
 .todaycard h2 { margin: 0 0 4px; font-family: var(--font-display); font-size: 24px; font-weight: 800; letter-spacing: -0.03em; }
 .todaycard p { margin: 0 0 8px; opacity: .88; font-size: 14px; }
 .todaycard .mini { background: rgba(255, 255, 255, .16); color: #fff; }
-.todaycard .btn { background: var(--tape); border-color: var(--tape); color: var(--tape-ink); }
+
 
 /* Conseil */
 .advice { display: flex; flex-direction: column; gap: 16px; padding: 18px; background: var(--surface); border-radius: 26px; box-shadow: var(--shadow); }
@@ -431,7 +432,9 @@ img[data-cut] { object-fit: contain !important; padding: 6%; box-sizing: border-
 .usage { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 18px; background: var(--surface); }
 .usage .u { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .menu { display: flex; flex-direction: column; gap: 8px; }
-.mrow { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 68px; padding: 10px 14px; border: 0; border-radius: 20px; background: var(--bg); text-align: left; }
+.mgrp { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.mgrp h2 { margin: 6px 0 0 4px; font-family: var(--font-body); font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.mrow { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 62px; padding: 10px 14px; border: 0; border-radius: 20px; background: var(--bg); text-align: left; }
 .mrow:active { transform: scale(.98); }
 .mrow .mi { flex: none; width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
 .mrow .mt { min-width: 0; }
@@ -502,7 +505,10 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
 .hero, .todaycard { position: relative; border-radius: 14px; background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .06) 0 1px, transparent 1px 5px), var(--hero-a); outline: 1.5px dashed rgba(255, 255, 255, .5); outline-offset: -7px; padding: 22px; }
 .tapeprog { border-radius: 3px; height: 18px; background: rgba(0, 0, 0, .28); }
 .tapeprog i { background: var(--tape); }
-.hero .btn.tape, .todaycard .btn { border-radius: 8px; box-shadow: 0 0 0 1.5px var(--tape-ink) inset; }
+.hero .btn.tape, .todaycard .btn { border-radius: 12px; box-shadow: none; }
+.hero .btn.tape { background: #fff; border-color: #fff; color: #0e1424; }
+.todaycard .btn { background: transparent; border-color: rgba(255, 255, 255, .6); color: #fff; }
+.todaycard .btn.primary { background: #fff; border-color: #fff; color: #0e1424; }
 
 /* Surfaces */
 .progress, .advice, .outfit, .jcard, .brand, .kpi, .lrows, .note { border-radius: 12px; }
@@ -563,17 +569,17 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
 .railwrap::before { content: ""; position: absolute; left: 0; right: 0; top: 2px; height: 3px; border-radius: 2px; background: color-mix(in srgb, var(--ink) 32%, transparent); }
 .rail { position: relative; display: flex; gap: 12px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scroll-padding-inline: var(--bgl); padding: 0 var(--bgl) 14px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .rail::-webkit-scrollbar { display: none; }
-.hang { flex: none; width: 128px; display: flex; flex-direction: column; border: 0; background: none; padding: 0; text-align: left; color: inherit; scroll-snap-align: start; transform: rotate(var(--sway, 0deg)); transform-origin: 50% 0; }
+.hang { flex: none; width: 108px; display: flex; flex-direction: column; border: 0; background: none; padding: 0; text-align: left; color: inherit; scroll-snap-align: start; transform: rotate(var(--sway, 0deg)); transform-origin: 50% 0; }
 .rail.moving .hang { will-change: transform; }
 .hang .hook { width: 30px; height: 22px; margin: 0 auto -3px; color: var(--muted); stroke-width: 1.6; }
 .hang .ph { position: relative; display: block; aspect-ratio: 4 / 5; border-radius: 10px; overflow: hidden; background: var(--surface2); box-shadow: var(--shadow); }
 .hang .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.hang .ph-empty { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 44px; color: var(--muted); }
-.hang .stamp { right: 6px; bottom: 6px; min-width: 28px; height: 28px; font-size: 13px; }
+.hang .ph-empty { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 38px; color: var(--muted); }
+.hang .stamp { right: 5px; bottom: 5px; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 9px; font-size: 12px; }
 .hang .hi { display: flex; flex-direction: column; gap: 1px; margin-top: 7px; }
-.hang .br { font-size: 12px; font-weight: 700; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hang .br { font-size: 11.5px; font-weight: 700; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hang .br.miss { color: var(--warn); }
-.hang .nm { font-size: 14px; font-weight: 650; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.hang .nm { font-size: 13px; font-weight: 650; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .hang { transform: none; } }
 html[data-font="serif"] { --font-display: 'Fraunces', Georgia, serif; --font-body: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif; }
 html[data-font="tech"] { --font-display: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif; --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
@@ -599,7 +605,22 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
 .capcard .btn { flex: none; }
 .capimg { display: block; width: 100%; max-height: 200px; object-fit: contain; border-radius: 16px; background: var(--bg); margin-bottom: 12px; }
 .photobox.selfie .view { height: 170px; }
-.tcb { flex: none; display: flex; flex-direction: column; gap: 8px; }
+.tcb { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 10px; }
+.tcb .btn { flex: 1 1 130px; padding: 0 10px; white-space: nowrap; }
+.calhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.calhead h2 { margin: 0; font-family: var(--font-display); font-size: 20px; font-weight: 800; letter-spacing: -0.02em; text-transform: capitalize; }
+.calgrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.calw { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); padding: 4px 0; }
+.cald { position: relative; aspect-ratio: 3 / 4; padding: 0; border: 0; border-radius: 9px; overflow: hidden; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); }
+.cald.empty { background: none; box-shadow: none; }
+.cald.fut { opacity: .4; }
+.cald.today { box-shadow: inset 0 0 0 2.5px var(--ink); }
+.cald img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cald .mos { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; }
+.cald .mos > span { overflow: hidden; display: grid; place-items: center; background: var(--surface2); font-size: 11px; font-weight: 800; color: var(--muted); }
+.cald .dn { position: absolute; top: 3px; left: 3px; z-index: 2; min-width: 16px; padding: 0 3px; border-radius: 6px; background: color-mix(in srgb, var(--surface) 82%, transparent); font-size: 11px; font-weight: 700; text-align: center; }
+.cald .st { position: absolute; right: 3px; bottom: 2px; z-index: 2; font-style: normal; font-size: 11px; color: var(--tape-ink); background: var(--tape); border-radius: 6px; padding: 0 3px; }
+.calsum { margin: 4px 2px 0; font-size: 13.5px; color: var(--muted); }
 .chkrow { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: var(--muted); }
 .chkrow input { width: 18px; height: 18px; flex: none; }
 .gbox { display: flex; flex-direction: column; gap: 10px; }
@@ -794,7 +815,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   <section class="sec" id="v-journal" hidden>
     <header class="hd"><div><h1>Tenues</h1><p>Ce que tu portes, et ce qui marche.</p></div></header>
     <div class="todaycard" id="today"></div>
-    <div class="chips"><button class="chip" type="button" id="favChip" aria-pressed="false">Favorites ★</button></div>
+    <div class="chips" id="jModes"><button class="chip" type="button" data-jm="month" aria-pressed="true">Calendrier</button><button class="chip" type="button" data-jm="list" aria-pressed="false">Liste</button><button class="chip" type="button" id="favChip" data-jm="fav" aria-pressed="false">Favorites ★</button></div>
     <div class="jlist" id="jlist"></div>
   </section>
 
@@ -844,7 +865,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
 
   <!-- PLUS -->
   <section class="sec" id="v-more" hidden>
-    <header class="hd"><div><h1>Plus</h1><p>Le reste de ton dressing.</p></div></header>
+    <header class="hd"><div><h1>Plus</h1><p>Le reste de ton dressing.</p></div><button class="iconbtn lg" type="button" data-more="settings" aria-label="Réglages"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg></button></header>
     <div id="moreBody"></div>
   </section>
 
@@ -1367,15 +1388,15 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   }
   function aiMsg(e) {
     var c = e && e.code;
-    if (c === "no_credit") return "Le crédit de l'IA est épuisé. Il faut le recharger côté API.";
-    if (c === "bad_key") return "La clé de l'IA est refusée. À vérifier côté serveur.";
-    if (c === "bad_model") return "Le modèle d'IA est introuvable côté serveur.";
-    if (c === "upstream") return "Claude a répondu une erreur" + (e.message ? " : " + String(e.message).slice(0, 90) : "") + ".";
+    if (c === "no_credit") return "Le crédit du service est épuisé. Il faut le recharger côté API.";
+    if (c === "bad_key") return "La clé du service est refusée. À vérifier côté serveur.";
+    if (c === "bad_model") return "Le modèle demandé est introuvable côté serveur.";
+    if (c === "upstream") return "Le service a répondu une erreur" + (e.message ? " : " + String(e.message).slice(0, 90) : "") + ".";
     if (c === "not_granted") return "Session expirée. Recharge la page et reconnecte-toi.";
-    if (c === "sampling_disabled") return "Claude n'est pas disponible sur ce compte.";
+    if (c === "sampling_disabled") return "Ce service n'est pas disponible sur ce compte.";
     if (c === "rate_limited") return "Trop d'appels à la suite. Réessaie dans un moment.";
-    if (c === "invalid_json" || c === "empty_completion" || c === "refused") return "L'IA n'a pas su répondre à cette demande.";
-    return "Appel à Claude impossible pour l'instant.";
+    if (c === "invalid_json" || c === "empty_completion" || c === "refused") return "L'analyse n'a pas abouti pour cette demande.";
+    return "Service injoignable pour l'instant.";
   }
   function aiStops(e) {
     var c = e && e.code;
@@ -1588,9 +1609,32 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   function railsMode() {
     return loaded && !unavailable && items.length && !selMode && !F.q && !F.cat && !F.review && !F.color && !F.loc && !F.tag && !F.bag && !F.brand && !F.label && F.status === "live";
   }
+  var usualCache = { src: null, map: {} };
+  function usualSizes() {
+    if (usualCache.src === items) return usualCache.map;
+    var by = {}, out = {};
+    items.forEach(function (it) {
+      if (!isLive(it) || !it.size) return;
+      var c = it.category || "", s = normSize(it.size), m = by[c] = by[c] || { n: 0, cnt: {} };
+      m.n++; m.cnt[s] = (m.cnt[s] || 0) + 1;
+    });
+    Object.keys(by).forEach(function (c) {
+      var m = by[c]; if (m.n < 4) return;
+      var best = Object.keys(m.cnt).sort(function (a, b) { return m.cnt[b] - m.cnt[a]; })[0];
+      if (m.cnt[best] / m.n >= 0.5) out[c] = best;
+    });
+    usualCache = { src: items, map: out };
+    return out;
+  }
+  function stampOf(it, canMiss) {
+    if (!it.size) return canMiss ? '<span class="stamp miss">Taille ?</span>' : "";
+    var u = usualSizes()[it.category || ""];
+    if (u && normSize(it.size) === u) return "";
+    return '<span class="stamp">' + esc(it.size) + "</span>";
+  }
   function hangHtml(it, i, extra) {
     var s = srcOf(it), nm = it.name || "Sans nom";
-    var stamp = it.size ? '<span class="stamp">' + esc(it.size) + "</span>" : '<span class="stamp miss">Taille ?</span>';
+    var stamp = stampOf(it, true);
     var brand = it.brand ? '<span class="br">' + esc(it.brand) + "</span>" : '<span class="br miss">Marque ?</span>';
     return '<button class="hang" type="button" style="--k:' + (i % 7) + '" data-id="' + esc(it.id) + '"><svg class="ic hook" aria-hidden="true"><use href="#i-hook"/></svg>' +
       '<span class="ph">' + (s ? '<img' + (it.cut ? ' data-cut' : '') + ' src="' + esc(s) + '" alt="" loading="lazy">' : '<span class="ph-empty">' + esc((it.category || nm).charAt(0).toUpperCase()) + "</span>") + stamp + (extra ? '<span class="now">Dans la tenue</span>' : "") + "</span>" +
@@ -1657,7 +1701,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       if (it.ordered && it.eta) sub.push("livraison " + fmtShort(it.eta));
       if (isBasic(it)) sub.push("basique");
       var cls = "card" + (sel.has(it.id) ? " sel" : "") + (live || it.status === "envie" ? "" : " gone");
-      var stamp = it.size ? '<span class="stamp">' + esc(it.size) + "</span>" : (live && !busy ? '<span class="stamp miss">Taille ?</span>' : "");
+      var stamp = stampOf(it, live && !busy);
       var brand = it.brand ? '<span class="br">' + esc(it.brand) + "</span>" : (live && !busy ? '<span class="br miss">Marque ?</span>' : "");
       return '<button class="' + cls + '" type="button" data-id="' + esc(it.id) + '">' +
         '<span class="ph' + (busy ? " busy" : "") + '">' + (s ? '<img' + (it.cut ? ' data-cut' : '') + ' src="' + esc(s) + '" alt="" loading="lazy">' : '<span class="ph-empty">' + esc((it.category || nm).charAt(0).toUpperCase()) + "</span>") +
@@ -1723,22 +1767,32 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     var off = !itemsCol || !!unavailable, ready = loaded && !unavailable;
     var wn = ready ? items.filter(isWish).length : 0, dn = ready ? dcCount() : 0;
     var tn = trips.filter(function (t) { return tripState(t).k !== "past"; }).length, on = ready ? items.filter(isOrder).length : 0;
-    var rows = [
-      ["trip", "box", "Valise", tn ? plural(tn, "valise") + " à venir ou en cours." : "Préparer un voyage avec les pièces de ton dressing.", off || !items.length],
-      ["wish", "tag", "Wishlist", wn ? plural(wn, "pièce") + " repérée" + (wn > 1 ? "s" : "") + ", hors stock." : "Les pièces vues en magasin que tu ne prends pas tout de suite.", off],
-      ["orders", "box", "Commandes", plural(on, "pièce") + " en route.", off],
-      ["declutter", "check", "Désencombrer", dn ? plural(dn, "pièce") + " à passer en revue." : "Garder, vendre ou donner, pièce par pièce.", off || !items.length],
-      ["brands", "tag", "Marques", "Ce que tu portes par marque, ce qui te va.", false],
-      ["stats", "chart", "Bilan", "Valeur, usage, sauvegarde et restauration.", false],
-      ["bag", "box", "Faire un sac", "Sélectionne des pièces à descendre à la cave.", off || !items.length],
-      ["places", "pin", "Lieux et sacs", "Ce qui est à la maison, ce qui est rangé ailleurs.", off || !items.length],
-      ["basics", "tag", "Basiques", "T-shirts unis, sous-vêtements, chaussettes : non suivis un par un.", off || !items.length],
-      ["settings", "pencil", "Réglages", "Typographie, détourage, version de l'app.", false]
+    var groups = [
+      ["Préparer", [
+        ["trip", "box", "Valise", tn ? plural(tn, "valise") + " à venir ou en cours." : "Préparer un voyage.", off || !items.length],
+        ["bag", "closet", "Faire un sac", "Pièces à descendre à la cave.", off || !items.length]
+      ]],
+      ["Acheter", [
+        ["wish", "tag", "Wishlist", wn ? plural(wn, "pièce") + " repérée" + (wn > 1 ? "s" : "") + ", hors stock." : "Vues en magasin, pas encore prises.", off],
+        ["orders", "cal", "Commandes", plural(on, "pièce") + " en route.", off]
+      ]],
+      ["Trier", [
+        ["declutter", "check", "Désencombrer", dn ? plural(dn, "pièce") + " à passer en revue." : "Garder, vendre ou donner.", off || !items.length],
+        ["basics", "shirt", "Basiques", "T-shirts unis, chaussettes : non suivis.", off || !items.length],
+        ["places", "pin", "Lieux et sacs", "Ce qui est où.", off || !items.length]
+      ]],
+      ["Comprendre", [
+        ["stats", "chart", "Bilan", "Valeur, usage, sauvegarde.", false],
+        ["brands", "spark", "Marques", "Ce que tu portes, ce qui te va.", false]
+      ]]
     ];
-    rows = rows.filter(function (r) { return r[0] !== "orders" || on; });
-    setHtml(el, '<div class="menu">' + rows.map(function (r) {
+    var rowHtml = function (r) {
       return '<button class="mrow" type="button" data-more="' + r[0] + '"' + (r[4] ? " disabled" : "") + '><span class="mi">' + ic(r[1]) + '</span><span class="mt"><b>' + esc(r[2]) + "</b><small>" + esc(r[3]) + "</small></span></button>";
-    }).join("") + "</div>");
+    };
+    setHtml(el, groups.map(function (g) {
+      var rows = g[1].filter(function (r) { return r[0] !== "orders" || on; });
+      return '<div class="mgrp"><h2>' + esc(g[0]) + '</h2><div class="menu">' + rows.map(rowHtml).join("") + "</div></div>";
+    }).join(""));
   }
   $("#v-more").addEventListener("click", function (e) {
     var b = e.target.closest("[data-more]"); if (!b || b.disabled) return;
@@ -1753,8 +1807,12 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     else if (a === "basics") startBasic();
     else if (a === "settings") { stFrom = "more"; setView("settings"); }
   });
-  var BUILD = { id: "2026.11.08-b", label: "8 novembre 2026" };
+  var BUILD = { id: "2026.11.08-c", label: "8 novembre 2026" };
   var CHANGES = [
+    "Tenues : calendrier du mois avec une vignette par jour",
+    "Plus : quatre groupes, Réglages dans l'en-tête",
+    "Dressing : cintres plus compacts, taille affichée seulement quand elle sort de l'ordinaire",
+    "Boutons harmonisés, le jaune réservé à l'ajout",
     "Accueil centré sur la tenue du jour : photos en grand, balayage entre les propositions, météo en bandeau",
     "Un seul bouton + pour ajouter, photographier ou importer",
     "Titre compact qui reste en haut quand tu défiles",
@@ -2072,7 +2130,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     var h = $("#fValueHint");
     if (!ed || !ed.valueAi || ed.valueLo == null || ed.valueHi == null || $("#fValue").value === "") { h.hidden = true; return; }
     h.hidden = false;
-    h.textContent = "Estimé par l'IA : " + (ed.valueLo === ed.valueHi ? ed.valueLo : ed.valueLo + " à " + ed.valueHi) + " € en occasion. Modifie le montant pour le remplacer.";
+    h.textContent = "Estimation : " + (ed.valueLo === ed.valueHi ? ed.valueLo : ed.valueLo + " à " + ed.valueHi) + " € en occasion. Modifie le montant pour le remplacer.";
   }
   $("#fValue").addEventListener("input", function () { if (ed) { ed.valueAi = false; ed.valueLo = null; ed.valueHi = null; } renderValueHint(); });
   function renderPhoto() {
@@ -2363,14 +2421,43 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     return '<span class="strip">' + out + "</span>";
   }
   function starsTxt(n) { return n ? "★★★★★".slice(0, n) + "☆☆☆☆☆".slice(0, 5 - n) : ""; }
+  function ymNow() { var d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1); }
+  function renderCal() {
+    var ym = renderJournal.ym || ymNow(), y = +ym.slice(0, 4), m = +ym.slice(5, 7) - 1;
+    var first = new Date(y, m, 1), off = (first.getDay() + 6) % 7, nd = new Date(y, m + 1, 0).getDate(), today = todayStr();
+    var by = {}; wears.forEach(function (w) { by[w.date] = w; });
+    var cells = "", cnt = 0, i, d;
+    for (i = 0; i < off; i++) cells += '<span class="cald empty"></span>';
+    for (d = 1; d <= nd; d++) {
+      var ds = ym + "-" + pad(d), w = by[ds], fut = ds > today, inner = "";
+      if (w) {
+        cnt++;
+        var s = srcOf(w);
+        inner = s ? '<img src="' + esc(s) + '" alt="" loading="lazy">' : '<span class="mos">' + w.items.map(itemById).filter(Boolean).slice(0, 4).map(function (it) { return "<span>" + thumbImg(it) + "</span>"; }).join("") + "</span>";
+      }
+      cells += '<button class="cald' + (w ? " has" : "") + (ds === today ? " today" : "") + '" type="button" data-cd="' + ds + '"' + (fut ? " disabled" : "") + ' aria-label="' + esc(fmtDay(ds)) + (w ? ", tenue enregistrée" : "") + '">' +
+        inner + '<b class="dn">' + d + "</b>" + (w && w.rating >= 4 ? '<i class="st">★</i>' : "") + "</button>";
+    }
+    cells = cells.replace(/class="cald( has)?( today)?"([^>]*disabled)/g, function (a, x, y2, z) { return 'class="cald' + (x || "") + (y2 || "") + ' fut"' + z; });
+    var label = first.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+    var prev = '<span style="display:inline-grid;transform:rotate(180deg)">' + ic("chev") + "</span>";
+    return '<div class="calhead"><button class="iconbtn" type="button" data-cm="-1" aria-label="Mois précédent">' + prev + "</button><h2>" + esc(label) + '</h2><button class="iconbtn" type="button" data-cm="1" aria-label="Mois suivant"' + (ym >= ymNow() ? " disabled" : "") + ">" + ic("chev") + "</button></div>" +
+      '<div class="calgrid">' + ["L", "M", "M", "J", "V", "S", "D"].map(function (x) { return '<span class="calw">' + x + "</span>"; }).join("") + cells + "</div>" +
+      '<p class="calsum">' + (cnt ? plural(cnt, "tenue") + " ce mois-ci." : "Aucune tenue ce mois-ci. Touche un jour pour en noter une.") + "</p>";
+  }
   function renderJournal() {
     var today = todayStr();
     var tw = wears.filter(function (w) { return w.date === today; })[0];
     var can = !!wearsCol && !unavailable;
     $("#today").innerHTML = tw
       ? '<div><h2>Tenue du jour</h2><p>' + plural(tw.items.length, "pièce") + (tw.occasion ? " · " + esc(tw.occasion) : "") + "</p>" + strip(tw.items, 8) + '</div><div class="tcb"><button class="btn" type="button" data-edit="' + esc(today) + '">Modifier</button><button class="btn" type="button" data-selfie="1"' + (can ? "" : " disabled") + ">Photo de moi</button></div>"
-      : '<div><h2>Tenue du jour</h2><p>' + esc(fmtDay(today, true)) + '. Pas encore notée.</p></div><div class="tcb"><button class="btn primary" type="button" data-new="1"' + (can ? "" : " disabled") + '>Noter ma tenue</button><button class="btn" type="button" data-selfie="1"' + (can ? "" : " disabled") + ">Photo de moi</button></div>";
-    $("#favChip").setAttribute("aria-pressed", String(!!renderJournal.fav));
+      : '<div><h2>Tenue du jour</h2><p>' + esc(fmtDay(today, true)) + '. Pas encore notée.</p></div><div class="tcb"><button class="btn primary" type="button" data-selfie="1"' + (can ? "" : " disabled") + '>Photo de moi</button><button class="btn" type="button" data-new="1"' + (can ? "" : " disabled") + ">Noter ma tenue</button></div>";
+    var md = renderJournal.mode || "month";
+    $("#jModes").querySelectorAll("[data-jm]").forEach(function (c) {
+      var k = c.getAttribute("data-jm");
+      c.setAttribute("aria-pressed", String(k === "month" ? md === "month" : k === "list" ? md === "list" && !renderJournal.fav : !!renderJournal.fav && md === "list"));
+    });
+    if (md === "month") { $("#jlist").innerHTML = renderCal(); return; }
     var list = wears.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
     if (renderJournal.fav) list = list.filter(function (w) { return w.rating >= 4; });
     if (!list.length) {
@@ -2600,7 +2687,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   // ---------- Conseil ----------
   function setAdviceMsg(t) { $("#aMsg").textContent = t || ""; }
   async function runAdvice() {
-    if (!sample) { setAdviceMsg("Claude n'est pas disponible pour le moment."); return; }
+    if (!sample) { setAdviceMsg("Cette fonction n'est pas disponible pour le moment."); return; }
     var ctx = $("#aCtx").value.trim();
     if (!ctx) { setAdviceMsg("Décris l'occasion pour que je choisisse."); return; }
     var onlyHome = $("#aHome").checked, avoid = $("#aAvoid").checked;
@@ -2932,7 +3019,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     if (unavailable) h = "";
     else if (!loaded) h = '<div class="look"><p class="why">Chargement…</p></div>';
     else if (poolHome().length < 3) h = '<div class="look"><span class="lab">La tenue du jour</span><p class="why">Ajoute au moins 3 pièces à la maison pour recevoir une tenue du jour.</p></div>';
-    else if (!sample) h = '<div class="look"><span class="lab">La tenue du jour</span><p class="why">Claude n\'est pas disponible pour le moment.</p></div>';
+    else if (!sample) h = '<div class="look"><span class="lab">La tenue du jour</span><p class="why">Cette fonction n\'est pas disponible pour le moment.</p></div>';
     else if (home.busy) h = '<div class="look"><span class="lab">La tenue du jour</span><p class="why">Je compose ta tenue avec ton dressing' + (wx ? " et la météo" : "") + "…</p></div>";
     else if (wxState === "off" && !home.noWx) h = '<div class="look"><span class="lab">La tenue du jour</span><p class="why">Indique la météo plus bas pour que je compose la tenue. Ou prends-la sans météo.</p><div class="acts"><button class="btn" type="button" data-look="nowx">Sans météo</button></div></div>';
     else if (home.list.length) {
@@ -3129,7 +3216,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   }
   async function runBuy(file) {
     setBuyPick(null);
-    if (!sample) { setBuyMsg("Claude n'est pas disponible pour le moment."); return; }
+    if (!sample) { setBuyMsg("Cette fonction n'est pas disponible pour le moment."); return; }
     var pool = items.filter(function (it) { return isLive(it) && !isBasic(it); }).slice(0, 250);
     if (pool.length < 3) { setBuyMsg("Ajoute au moins 3 pièces à ton dressing pour que je puisse comparer."); return; }
     var blob;
@@ -3391,7 +3478,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       '<div class="fph' + (lab ? "" : " one") + '"><span>' + (s1 ? "<img" + (it.cut ? " data-cut" : "") + ' src="' + esc(s1) + '" alt="Photo de la pièce">' : "Pas de photo") + "</span>" +
       (lab ? '<span><img src="' + esc(srcOf2(it)) + '" alt="Étiquette"></span>' : "") + "</div>" +
       '<p class="fname">' + esc(it.name || "Sans nom") + " <small>· il manque " + miss.join(", ") + "</small></p>" +
-      (canAI ? '<div><button class="btn small" type="button" data-fill="ai">Lire ' + (lab ? "l\'étiquette" : "la photo") + " avec l\'IA</button></div>" : "") +
+      (canAI ? '<div><button class="btn small" type="button" data-fill="ai">Lire ' + (lab ? "l\'étiquette" : "la photo") + " automatiquement</button></div>" : "") +
       '<div class="field"><label for="qBrand">Marque</label><input id="qBrand" type="text" maxlength="40" autocapitalize="words" autocomplete="off" placeholder="Nike, Uniqlo, Norrøna…" value="' + esc(it.brand) + '"><div class="chips scroll" id="qBrandChips"></div></div>' +
       '<div class="field"><label for="qKind">Type</label><input id="qKind" type="text" maxlength="30" autocomplete="off" placeholder="Jean, chemise, sneakers…" value="' + esc(it.kind) + '"><div class="chips scroll" id="qKindChips"></div></div>' +
       '<div class="field"><label for="qSize">Taille</label><div class="tapebar" id="qSizeTape" role="group" aria-label="Tailles courantes"></div><input id="qSize" type="text" maxlength="20" autocomplete="off" placeholder="Autre taille : 32/34, 42 EU…" value="' + esc(it.size) + '"><div class="chips" id="qSizeHint"></div></div>' +
@@ -3673,7 +3760,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       '<div class="kpi"><span class="k">Déjà vendu</span><span class="v">' + money(cashed) + '</span><span class="s">' + plural(sold.length, "pièce") + "</span></div></div>";
 
     var ec = estCounts();
-    h += '<div class="lblock"><h2>Estimation par l\'IA</h2><p class="hint">' + (ec.none ? plural(ec.none, "pièce") + " sans estimation de revente. " : "Toutes les pièces ont une valeur. ") + (ec.ai ? plural(ec.ai, "valeur") + " estimée" + (ec.ai > 1 ? "s" : "") + " par l\'IA." : "") + '</p><div class="row-btns"><button class="btn primary" type="button" data-bk="est"' + (sample && itemsCol ? "" : " disabled") + ">Lancer une estimation</button></div></div>";
+    h += '<div class="lblock"><h2>Estimation de revente</h2><p class="hint">' + (ec.none ? plural(ec.none, "pièce") + " sans estimation de revente. " : "Toutes les pièces ont une valeur. ") + (ec.ai ? plural(ec.ai, "valeur") + " estimée" + (ec.ai > 1 ? "s" : "") + " par l\'IA." : "") + '</p><div class="row-btns"><button class="btn primary" type="button" data-bk="est"' + (sample && itemsCol ? "" : " disabled") + ">Lancer une estimation</button></div></div>";
     var days = W.first ? Math.max(0, Math.round((Date.now() - parseDay(W.first).getTime()) / 86400000)) : 0;
     if (!W.first) h += '<p class="note warn">Aucun port enregistré. Les listes « peu porté » ne veulent rien dire tant que tu n\'as pas noté tes tenues. Utilise l\'onglet Tenues, ou renseigne « Ports avant le suivi » sur les fiches.</p>';
     else if (days < 60) h += '<p class="note warn">Suivi des ports depuis le ' + esc(fmtDay(W.first)) + " (" + plural(days, "jour") + "). Les classements gagnent en fiabilité après environ 2 mois de tenues notées.</p>";
@@ -4956,9 +5043,21 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   $("#btnNo").addEventListener("click", resetDelete);
 
   // Journal
-  $("#favChip").addEventListener("click", function () { renderJournal.fav = !renderJournal.fav; renderJournal(); });
+  $("#jModes").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-jm]"); if (!b) return;
+    var k = b.getAttribute("data-jm");
+    if (k === "month") { renderJournal.mode = "month"; renderJournal.fav = false; }
+    else if (k === "list") { renderJournal.mode = "list"; renderJournal.fav = false; }
+    else { renderJournal.mode = "list"; renderJournal.fav = !(renderJournal.mode === "list" && renderJournal.fav); }
+    renderJournal();
+  });
   $("#v-journal").addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
+    if (b.hasAttribute("data-cm")) {
+      var ym0 = renderJournal.ym || ymNow(), yy = +ym0.slice(0, 4), mm = +ym0.slice(5, 7) - 1 + (+b.getAttribute("data-cm")), nd2 = new Date(yy, mm, 1);
+      renderJournal.ym = nd2.getFullYear() + "-" + pad(nd2.getMonth() + 1); renderJournal(); return;
+    }
+    if (b.hasAttribute("data-cd")) { if (!b.disabled) openWear({ date: b.getAttribute("data-cd") }); return; }
     if (b.hasAttribute("data-selfie")) $("#fileSelfie").click();
     else if (b.hasAttribute("data-new")) openWear({});
     else if (b.hasAttribute("data-edit")) openWear({ date: b.getAttribute("data-edit") });
