@@ -85,7 +85,7 @@ section[hidden] { display: none; }
 
 /* Titres d'onglet */
 .hd { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 14px 0 2px; }
-.hd h1 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 38px; letter-spacing: -0.04em; line-height: 1; }
+.hd h1 { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: 34px; letter-spacing: -0.04em; line-height: 1; }
 .hd p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
 
 /* Boutons */
@@ -526,7 +526,7 @@ body.again-on .toast { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0p
 /* Accueil : tenue du jour et météo */
 .hd p.kick { margin: 0 0 8px; font-size: 14px; font-weight: 650; color: var(--muted); }
 .hd p.kick::first-letter { text-transform: uppercase; }
-.hd.home h1 { font-size: 32px; line-height: 1.04; text-wrap: balance; }
+.hd.home h1 { font-size: 30px; line-height: 1.04; text-wrap: balance; }
 .hero.wx { gap: 12px; }
 .hero.wx .big { font-size: 60px; }
 .hero.wx .wxic .ic { width: 56px; height: 56px; stroke-width: 1.4; }
@@ -624,7 +624,27 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
 .avatar.sm { padding: 10px 0 4px; }
 .avatar.sm svg.av { height: 190px; }
 .avatar .avhint { position: absolute; left: 0; right: 0; bottom: 22px; margin: 0; text-align: center; font-size: 13px; color: var(--muted); }
-.look .pc .sw { font-size: 11.5px; font-weight: 700; color: var(--accent); }
+.look .pc .rpl { font-size: 12px; font-weight: 700; color: var(--accent); text-align: left; }
+.look .pc .n { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.4em; }
+.look .pc .b { display: none; }
+.look .lh { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.look .cnt { font-size: 12px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.look .pieces { grid-template-columns: repeat(3, 1fr); animation: lkin .22s ease-out; }
+.look .pieces.p4 { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.look .pieces.p4 .pc .n { font-size: 11.5px; }
+.look { touch-action: pan-y; }
+.look .lnks { gap: 0 20px; }
+.look .lnks .linkbtn { min-height: 40px; }
+@keyframes lkin { from { opacity: .35; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .look .pieces { animation: none; } }
+.wxstrip { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 14px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); text-align: left; }
+.wxstrip .ic { width: 26px; height: 26px; flex: none; }
+.wxstrip .t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 14px; }
+.wxstrip .t b { font-family: var(--font-display); font-size: 19px; font-weight: 800; letter-spacing: -0.03em; }
+.wxstrip .t small { font-size: 12.5px; color: var(--muted); }
+.wxstrip .ed { flex: none; font-size: 13px; font-weight: 700; color: var(--accent); }
+.topbar { position: fixed; z-index: 30; top: 0; left: 0; right: 0; height: calc(46px + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px); display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--bg) 92%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1.5px solid var(--line); font-family: var(--font-display); font-weight: 800; font-size: 17px; letter-spacing: -0.02em; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .15s, transform .15s; }
+.topbar.on { opacity: 1; transform: none; }
 .swapstick { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; background: var(--bg); margin-inline: calc(-1 * var(--bgl)) calc(-1 * var(--bgr)); padding: 4px var(--bgr) 12px var(--bgl); }
 .swapstick .avatar.sm svg.av { height: 168px; }
 .swapcur { display: flex; align-items: center; gap: 12px; }
@@ -719,14 +739,12 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   <!-- ACCUEIL -->
   <section class="sec" id="v-home">
     <header class="hd home">
-      <div><p class="kick" id="hKick"></p><h1>Qu'est-ce qu'on porte aujourd'hui ?</h1></div>
-      <button class="iconbtn lg" id="hAdd" type="button" aria-label="Ajouter une pièce" disabled><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg></button>
+      <div><p class="kick" id="hKick"></p><h1>Aujourd'hui</h1></div>
     </header>
-    <div id="hAvatar"></div>
-    <div id="hLook"></div>
     <div id="hWx"></div>
+    <div id="hLook"></div>
+    <div id="hAvatar"></div>
     <div id="hTodo"></div>
-    <div class="capcard" id="hCap" hidden><div><b>Une pièce sous les yeux ?</b><span>Photographie-la : dressing, avis avant achat, wishlist ou commande.</span></div><button class="btn tape" type="button" data-act="capture"><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Photographier</button></div>
     <p class="note act" id="hBuy" hidden><span>Un achat en vue ? Photographie la pièce, je te dis si elle a sa place chez toi.</span><button class="btn small tape" type="button" data-act="buy">Je l'achète ?</button></p>
     <p class="note act" id="hTrip" hidden><span id="hTripTxt"></span><button class="btn small" type="button" data-act="trip">Ouvrir</button></p>
     <p class="note act" id="hWish" hidden><span id="hWishTxt"></span><button class="btn small" type="button" data-act="wishlist">Voir</button></p>
@@ -736,7 +754,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   <section class="sec" id="v-closet" hidden>
     <header class="hd">
       <div><h1>Dressing</h1><p id="count">Chargement…</p></div>
-      <button class="iconbtn lg" id="btnMenu" type="button" aria-label="Ajouter ou ranger" disabled><svg class="ic" aria-hidden="true"><use href="#i-dots"/></svg></button>
+      <button class="iconbtn lg" id="btnMenu" type="button" aria-label="Ajouter ou ranger" disabled hidden><svg class="ic" aria-hidden="true"><use href="#i-dots"/></svg></button>
     </header>
 
     <div id="hero" hidden></div>
@@ -854,8 +872,9 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   <section class="sec" id="v-stats" hidden></section>
 </div>
 
-<button class="fab" id="btnFab" type="button" aria-label="Ajouter une pièce : photo de la pièce puis de l'étiquette" disabled><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg></button>
+<button class="fab" id="btnFab" type="button" aria-label="Ajouter" disabled><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg></button>
 
+<div class="topbar" id="topbar" aria-hidden="true"></div>
 <nav class="tabbar" aria-label="Sections">
   <div class="tabs" id="tabs">
     <button class="tab" type="button" data-view="home" aria-current="page"><span class="ico"><svg class="ic" aria-hidden="true"><use href="#i-shirt"/></svg></span>Accueil</button>
@@ -1482,10 +1501,21 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     });
     if (v !== "closet" && selMode) { selMode = false; sel.clear(); }
     if (v !== "closet") hideAgain();
-    $("#btnFab").hidden = v !== "closet";
+    $("#btnFab").hidden = v !== "closet" && v !== "home";
     renderAll();
     window.scrollTo(0, 0);
+    updTop();
   }
+  var tbRaf = 0, tbTxt = "";
+  function updTop() {
+    tbRaf = 0;
+    var tb = $("#topbar"), sec = document.querySelector(".sec:not([hidden])"), h = sec && sec.querySelector(".hd h1");
+    if (!tb || !h || sec.querySelector(".stick, .swapstick")) { if (tb) tb.classList.remove("on"); return; }
+    var on = h.getBoundingClientRect().bottom < 40;
+    if (on && tbTxt !== h.textContent) { tbTxt = h.textContent; tb.textContent = tbTxt; }
+    tb.classList.toggle("on", on);
+  }
+  window.addEventListener("scroll", function () { if (!tbRaf) tbRaf = requestAnimationFrame(updTop); }, { passive: true });
   function gotoTodo() { openFill(); }
   function renderHead() {
     var live = items.filter(isLive), r = items.filter(needsReview).length;
@@ -1497,7 +1527,6 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     var off = !itemsCol || !!unavailable;
     $("#btnMenu").disabled = off;
     $("#btnFab").disabled = off || importing;
-    $("#hAdd").disabled = off || importing;
   }
   function fillSelect(el, options, value) {
     el.innerHTML = options.map(function (o) { return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + "</option>"; }).join("");
@@ -1668,7 +1697,8 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   function openMenu() {
     var off = !itemsCol || !!unavailable;
     var rows = [
-      ["shoot", "cam", "Ajouter en duo", "La pièce, puis ses étiquettes, autant de photos qu'il faut. Marque, taille et composition se lisent seules.", off],
+      ["shoot", "cam", "Ajouter une pièce", "La pièce, puis ses étiquettes, autant de photos qu'il faut. Marque, taille et composition se lisent seules.", off],
+      ["capture", "image", "Photographier une pièce", "Déjà dans ton dressing ? À acheter ? En wishlist ? Commandée ? Une photo, tu choisis.", off],
       ["add", "image", "Importer des photos", "Depuis ta galerie, plusieurs d'un coup.", off || importing],
       ["manual", "pencil", "Créer une fiche à la main", "Sans photo, ou pour une pièce d'une marque précise.", off],
       ["wish", "tag", "Ajouter à la wishlist", "Une pièce vue en magasin que tu ne prends pas tout de suite. Hors stock, hors valeur.", off]
@@ -1682,6 +1712,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       var a = b.getAttribute("data-m");
       closeDlg();
       if (a === "shoot") openDuo();
+      else if (a === "capture") $("#fileCap").click();
       else if (a === "add") $("#file").click();
       else if (a === "manual") openSheet(null);
       else if (a === "wish") openWish();
@@ -1722,8 +1753,11 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     else if (a === "basics") startBasic();
     else if (a === "settings") { stFrom = "more"; setView("settings"); }
   });
-  var BUILD = { id: "2026.11.08-a", label: "8 novembre 2026" };
+  var BUILD = { id: "2026.11.08-b", label: "8 novembre 2026" };
   var CHANGES = [
+    "Accueil centré sur la tenue du jour : photos en grand, balayage entre les propositions, météo en bandeau",
+    "Un seul bouton + pour ajouter, photographier ou importer",
+    "Titre compact qui reste en haut quand tu défiles",
     "Mon style et tendances : tenues et avis d'achat plus personnels, basiques écartés des propositions",
     "Photo de moi : détection des pièces portées, basiques non suivis",
     "Photo depuis l'accueil : dressing, avis avant achat, wishlist ou commande",
@@ -2743,7 +2777,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     var show = home.list.length && !(wxState === "off" && !home.noWx);
     var t = show ? home.list[home.idx % home.list.length] : null;
     var list = t ? t.items.map(itemById).filter(Boolean) : [];
-    setHtml($("#hAvatar"), '<div class="avatar">' + avatarSvg(list) + (list.length ? "" : '<p class="avhint">Ta tenue apparaît ici.</p>') + "</div>");
+    setHtml($("#hAvatar"), '<div class="avatar sm">' + avatarSvg(list) + (list.length ? "" : '<p class="avhint">Ta tenue apparaît ici.</p>') + "</div>");
   }
 
   // ---------- Accueil ----------
@@ -2884,10 +2918,10 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
         '<div class="cap"><span>' + esc(wxMsg) + '</span><button class="btn small" type="button" data-wx="retry">Réessayer en ligne</button></div></div></div>';
     } else {
       var rain = wx.pmax >= 40;
-      h = '<div class="hero wx"><div class="row"><div class="big">' + wx.temp + "°<small>" + esc(wx.kind[0]) + '</small></div><div class="wxic">' + ic(wx.kind[1]) + "</div></div>" +
-        '<div class="cap"><span>' + esc(city.name) + (wx.feels !== wx.temp ? " · ressenti " + wx.feels + "°" : "") + (wx.tmin != null ? " · " + wx.tmin + "° à " + wx.tmax + "°" : "") + "</span></div>" +
-        '<div class="cap"><span>' + (rain ? ic("rain") + "Pluie probable" + (wx.rainFrom != null ? " dès " + wx.rainFrom + "h" : "") + " (" + wx.pmax + "\u00a0%)" : "Pas de pluie prévue") +
-        '</span><button class="btn small tape" type="button" data-wx="edit">Modifier</button></div></div>';
+      h = '<button class="wxstrip" type="button" data-wx="edit" aria-label="Météo : modifier">' + ic(wx.kind[1]) +
+        '<span class="t"><span><b>' + wx.temp + "°</b> " + esc(wx.kind[0]) + "</span><small>" + esc(city.name) + (wx.feels !== wx.temp ? " · ressenti " + wx.feels + "°" : "") + (wx.tmin != null ? " · " + wx.tmin + "° à " + wx.tmax + "°" : "") +
+        " · " + (rain ? "Pluie probable" + (wx.rainFrom != null ? " dès " + wx.rainFrom + "h" : "") + " (" + wx.pmax + "\u00a0%)" : "Pas de pluie prévue") + "</small></span>" +
+        '<span class="ed">Modifier</span></button>';
     }
     setHtml(el, h);
   }
@@ -2903,13 +2937,14 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     else if (wxState === "off" && !home.noWx) h = '<div class="look"><span class="lab">La tenue du jour</span><p class="why">Indique la météo plus bas pour que je compose la tenue. Ou prends-la sans météo.</p><div class="acts"><button class="btn" type="button" data-look="nowx">Sans météo</button></div></div>';
     else if (home.list.length) {
       var t = home.list[home.idx % home.list.length];
-      h = '<div class="look"><span class="lab">La tenue du jour</span><h2>' + esc(t.titre) + '</h2><div class="pieces">' + t.items.slice(0, 6).map(function (id, pos) {
+      var np = Math.min(t.items.length, 6), nl = home.list.length;
+      h = '<div class="look"><div class="lh"><span class="lab">La tenue du jour</span>' + (nl > 1 ? '<span class="cnt" aria-label="Proposition ' + ((home.idx % nl) + 1) + " sur " + nl + '">' + ((home.idx % nl) + 1) + " / " + nl + " · glisse</span>" : "") + '</div><h2>' + esc(t.titre) + '</h2><div class="pieces' + (np === 4 ? " p4" : "") + '">' + t.items.slice(0, 6).map(function (id, pos) {
         var it = itemById(id); if (!it) return "";
-        return '<button class="pc" type="button" data-pos="' + pos + '" aria-label="Changer : ' + esc(it.name || "pièce") + '"><span class="ph">' + thumbImg(it) + '</span><span class="n">' + esc(it.name || "Sans nom") + '</span><span class="b">' + esc(it.brand || "") + '</span><span class="sw">Changer</span></button>';
+        return '<button class="pc" type="button" data-pos="' + pos + '" aria-label="Changer : ' + esc(it.name || "pièce") + '"><span class="ph">' + thumbImg(it) + '</span><span class="n">' + esc(it.name || "Sans nom") + '</span><span class="b">' + esc(it.brand || "") + '</span><span class="rpl">Changer</span></button>';
       }).join("") + "</div>" +
         (t.pourquoi && !t.mod ? '<p class="why">' + esc(t.pourquoi) + "</p>" : "") + (t.manque && !t.mod ? '<p class="why miss">Il manque : ' + esc(t.manque) + "</p>" : "") +
         '<div class="acts"><button class="btn primary" type="button" data-look="wear">Porter ce look</button><button class="btn" type="button" data-look="next">Un autre</button></div>' +
-        '<div class="lnks"><button class="linkbtn" type="button" data-look="occ">Pour une occasion précise</button><button class="linkbtn" type="button" data-look="share">Partager la tenue</button></div></div>';
+        '<div class="lnks"><button class="linkbtn" type="button" data-look="occ">Pour une occasion</button><button class="linkbtn" type="button" data-look="share">Partager</button></div></div>';
     } else h = '<div class="look"><span class="lab">La tenue du jour</span><p class="why">' + esc(home.msg || "Pas encore de tenue.") + '</p><div class="acts"><button class="btn primary" type="button" data-look="gen">Proposer une tenue</button></div></div>';
     setHtml(el, h);
   }
@@ -2921,7 +2956,6 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     $("#hKick").textContent = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
     renderWx(); renderLook(); renderTodo();
     $("#hBuy").hidden = true;
-    $("#hCap").hidden = !itemsCol || !!unavailable;
     var tn = homeTrip();
     $("#hTrip").hidden = !tn || !!unavailable;
     if (tn) $("#hTripTxt").textContent = tn.txt;
@@ -3029,7 +3063,23 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       wxMsg = ""; wxEdit = false; loadWeather(true);
     } catch (er) { wxMsg = "Recherche impossible pour l'instant."; renderWx(); }
   });
-  $("#hAdd").addEventListener("click", function () { $("#btnFab").click(); });
+  (function () {
+    var el = $("#hLook"), x0 = null, y0 = 0, swiped = 0;
+    el.addEventListener("touchstart", function (e) {
+      if (e.touches.length !== 1) { x0 = null; return; }
+      x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+    }, { passive: true });
+    el.addEventListener("touchend", function (e) {
+      if (x0 === null || home.list.length < 2 || home.busy) { x0 = null; return; }
+      var t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+      if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      var n = home.list.length;
+      home.idx = ((home.idx % n) + (dx < 0 ? 1 : n - 1)) % n;
+      swiped = Date.now();
+      renderLook();
+    }, { passive: true });
+    el.addEventListener("click", function (e) { if (Date.now() - swiped < 400) { e.stopPropagation(); e.preventDefault(); } }, true);
+  })();
   $("#v-advice").addEventListener("click", function (e) { if (e.target.closest("[data-back]")) setView("home"); });
 
   // Rails du dressing : tap et balancement des cintres
@@ -3799,7 +3849,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   $("#tabs").addEventListener("click", function (e) { var b = e.target.closest(".tab"); if (b) setView(b.getAttribute("data-view")); });
   function pickCamera() { openDuo(); }
   $("#btnMenu").addEventListener("click", openMenu);
-  $("#btnFab").addEventListener("click", openDuo);
+  $("#btnFab").addEventListener("click", openMenu);
   $("#btnFilters").addEventListener("click", openFilters);
 
   // ---------- Duo : plusieurs photos par pièce ----------
