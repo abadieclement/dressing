@@ -1399,7 +1399,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       "- seasons : les saisons où la pièce se porte, parmi " + SEASONS.join(", ") + ".\n" +
       "- tags : 0 à 3 valeurs parmi " + BASE_TAGS.join(", ") + ".\n" +
       "- basic : true seulement pour un basique interchangeable que l'on rachète sans y penser (T-shirt uni de base, sous-vêtement, chaussettes), sinon false.\n" +
-      "- value_min et value_max : fourchette réaliste du prix de revente d'occasion en France (Vinted), en euros entiers, pour une pièce en bon état. Mets 0 et 0 si la marque et le type ne permettent pas d'estimer.\n" +
+      "- value_min et value_max : fourchette réaliste du prix de revente d'occasion en France (Vinted), en euros entiers, pour une pièce en bon état. Mets 0 et 0 si la marque et le type ne permettent pas d'estimer, et aussi si la marque est de luxe, de créateur, peu connue ou la pièce possiblement rare : une photo ne suffit pas, mieux vaut aucune estimation qu'un prix de friperie.\n" +
       (hasLab
         ? "- brand : la marque lue sur l'étiquette ou le logo, sinon \"\".\n- size : la taille imprimée sur l'étiquette, telle quelle et courte, ex: M, L, 42, 32/32, UK 8. S'il y a plusieurs pays, garde la taille EU ou FR. Si elle n'est pas lisible, \"\"."
         : "- brand : seulement si une marque ou un logo est lisible sur la photo, sinon \"\".\n- size : toujours \"\".");
@@ -1824,8 +1824,9 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     else if (a === "basics") startBasic();
     else if (a === "settings") { stFrom = "more"; setView("settings"); }
   });
-  var BUILD = { id: "2026.11.11-d", label: "11 novembre 2026" };
+  var BUILD = { id: "2026.11.11-e", label: "11 novembre 2026" };
   var CHANGES = [
+    "Estimation de revente : prix payé et notes pris en compte, pas de prix de friperie pour une pièce chère ou rare",
     "Ajout d'une pièce : viseur intégré, une touche prend la photo sans l'écran Reprendre / Utiliser d'iOS",
     "Dressing : la taille s'affiche sur toutes les pièces",
     "Couleurs lues sur l'extérieur de la pièce : la doublure n'est plus comptée",
@@ -4891,7 +4892,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   // ---------- Estimation de la valeur de revente ----------
   var estBusy = false;
   function estLine(it, c) {
-    return [c, it.category, it.kind, it.brand || "marque inconnue", it.size ? "taille " + it.size : "", it.material, it.colors.join("/"), "état : " + (it.condition || "bon"), it.price ? "payé " + it.price + " €" : ""].filter(Boolean).join(" | ");
+    return [c, it.category, it.kind, it.brand || "marque inconnue", it.size ? "taille " + it.size : "", it.material, it.colors.join("/"), "état : " + (it.condition || "bon"), it.price ? "payé " + it.price + " €" : "", it.notes ? "notes : " + String(it.notes).slice(0, 120) : ""].filter(Boolean).join(" | ");
   }
   function estCounts() {
     var live = items.filter(isLive);
@@ -4925,7 +4926,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       toast("Estimation " + Math.min(i + 15, list.length) + " / " + list.length + "…");
       try {
         var lines = chunk.map(function (it, j) { var c = "p" + (j + 1); map[c] = it; return estLine(it, c); });
-        var prompt = "Tu estimes le prix de revente d'occasion (Vinted, Vestiaire Collective, en France, en euros) de vêtements et accessoires d'un dressing personnel. Pour chaque pièce, donne une fourchette réaliste min et max pour l'état indiqué. Le prix de revente dépasse rarement le prix payé. Si les informations ne permettent pas d'estimer, mets 0 et 0.\nPièces (code | catégorie | type | marque | taille | matière | couleurs | état | prix payé) :\n" + lines.join("\n") +
+        var prompt = "Tu estimes le prix de revente d'occasion (Vinted, Vestiaire Collective, en France, en euros) de vêtements et accessoires d'un dressing personnel. Pour chaque pièce, donne une fourchette réaliste min et max pour l'état indiqué. Le prix de revente dépasse rarement le prix payé. Quand un prix payé est indiqué, pars de ce prix : une pièce de marque haut de gamme ou de créateur en bon état se revend souvent entre 30 et 60 % de son prix payé, davantage si les notes indiquent une pièce rare, numérotée ou en édition limitée. Ne propose jamais un prix de friperie pour une pièce chère. Si les informations ne permettent pas d'estimer, mets 0 et 0.\nPièces (code | catégorie | type | marque | taille | matière | couleurs | état | prix payé | notes) :\n" + lines.join("\n") +
           '\nRéponds uniquement avec un objet JSON : {"items": [{"code": "p1", "min": 0, "max": 0}]}. Entiers en euros, min inférieur ou égal à max, un objet par pièce.';
         var r = await sample.json(prompt, { modelTier: "default" });
         var arr = r && Array.isArray(r.items) ? r.items : [];
