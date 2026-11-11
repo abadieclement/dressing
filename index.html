@@ -216,6 +216,12 @@ body.selecting .fab, body.again-on .fab { display: none; }
 .duo .pip.on { background: var(--tape); }
 .duo .stage { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; }
 .duo .guide { height: min(38vh, 300px); aspect-ratio: 3 / 4; max-width: 70vw; border-radius: 26px; border: 2px dashed color-mix(in srgb, var(--bg) 40%, transparent); display: grid; place-items: center; overflow: hidden; color: color-mix(in srgb, var(--bg) 70%, transparent); position: relative; }
+.duo .cam { display: none; height: min(38vh, 400px); aspect-ratio: 3 / 4; max-width: 86vw; border-radius: 22px; background: #000; object-fit: cover; }
+.duo.live .cam { display: block; }
+.duo.live .guide, .duo.live .hint { display: none; }
+.duo.live h2 { font-size: 26px; }
+.duo .cam.flash { animation: shotflash .22s ease-out; }
+@keyframes shotflash { 0% { opacity: .25; } 100% { opacity: 1; } }
 .duo .guide.lab { aspect-ratio: 4 / 3; height: min(30vh, 240px); }
 .duo .guide img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .duo .guide svg { width: 58%; height: auto; }
@@ -920,6 +926,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   <div class="dhead"><span class="dcount" id="duoCount"></span><button class="btn small" id="duoDone" type="button">Terminer</button></div>
   <div class="pips" aria-hidden="true"><i class="pip" id="pip1"></i><i class="pip" id="pip2"></i></div>
   <div class="stage">
+    <video class="cam" id="duoVideo" playsinline muted autoplay></video>
     <div class="guide" id="duoGuide"></div>
     <div class="shots" id="duoShots"></div>
     <h2 id="duoTitle"></h2>
@@ -1640,8 +1647,6 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   }
   function stampOf(it, canMiss) {
     if (!it.size) return canMiss ? '<span class="stamp miss">Taille ?</span>' : "";
-    var u = usualSizes()[it.category || ""];
-    if (u && normSize(it.size) === u) return "";
     return '<span class="stamp">' + esc(it.size) + "</span>";
   }
   function hangHtml(it, i, extra) {
@@ -1819,8 +1824,10 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     else if (a === "basics") startBasic();
     else if (a === "settings") { stFrom = "more"; setView("settings"); }
   });
-  var BUILD = { id: "2026.11.11-c", label: "11 novembre 2026" };
+  var BUILD = { id: "2026.11.11-d", label: "11 novembre 2026" };
   var CHANGES = [
+    "Ajout d'une pièce : viseur intégré, une touche prend la photo sans l'écran Reprendre / Utiliser d'iOS",
+    "Dressing : la taille s'affiche sur toutes les pièces",
     "Couleurs lues sur l'extérieur de la pièce : la doublure n'est plus comptée",
     "Ajout d'une pièce : plus d'étape de validation, l'étiquette enregistre la pièce, et on peut reprendre la photo de la pièce avant l'étiquette",
     "Fiche : toucher une photo propose l'appareil photo ou la photothèque, et permet de dire si c'est la pièce ou l'étiquette",
@@ -3958,6 +3965,45 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   // ---------- Duo : plusieurs photos par pièce ----------
   var duo = { on: false, step: "piece", cur: null, recent: [], chain: Promise.resolve(), aiOff: false, aiNote: "", fail: 0, total: 0, err: "" };
   var MAX_SHOTS = 6;
+  var camStream = null, camBad = false, camWanted = false;
+  function stopCam() {
+    if (camStream) { camStream.getTracks().forEach(function (t) { t.stop(); }); camStream = null; }
+    var v = $("#duoVideo"); if (v) v.srcObject = null;
+    duo.cam = false;
+    $("#duo").classList.remove("live");
+  }
+  async function startCam() {
+    if (camStream || camBad || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return false;
+    try {
+      var s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1440 } }, audio: false });
+      if (!duo.on || camStream) { s.getTracks().forEach(function (t) { t.stop(); }); return false; }
+      camStream = s;
+      var v = $("#duoVideo"); v.srcObject = s;
+      try { await v.play(); } catch (e) { /* lecture auto */ }
+      duo.cam = true; camWanted = true; duo.err = "";
+      $("#duo").classList.add("live");
+      renderDuo();
+      return true;
+    } catch (e) {
+      camBad = true; camWanted = false;
+      duo.err = "Viseur indisponible : l'appareil photo du téléphone sera utilisé.";
+      renderDuo();
+      return false;
+    }
+  }
+  function duoCapture() {
+    var v = $("#duoVideo");
+    if (!duo.cam || !v.videoWidth) return;
+    var c = document.createElement("canvas"); c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+    v.classList.remove("flash"); void v.offsetWidth; v.classList.add("flash");
+    var kind = duo.step === "label" && !duo.retake ? "label" : "piece";
+    c.toBlob(function (b) { if (b) duoAdd(kind, new File([b], "shot.jpg", { type: "image/jpeg" })); }, "image/jpeg", 0.92);
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { if (duo.cam) stopCam(); }
+    else if (duo.on && camWanted && !camBad) startCam();
+  });
   var SVG_HANGER = '<svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M60 22c0-6 5-9 9-9s9 4 9 9c0 6-6 8-9 12L60 40"/><path d="M60 40 14 70c-4 3-2 9 3 9h86c5 0 7-6 3-9L60 40Z"/><path d="M34 82v18h52V82" stroke-dasharray="2 7"/></svg>';
   function duoIcon(n) { return '<svg class="ic" aria-hidden="true"><use href="#i-' + n + '"/></svg>'; }
   var SVG_TAG = '<svg viewBox="0 0 160 120" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="22" y="14" width="116" height="92" rx="10"/><path d="M42 40h46M42 58h76M42 76h60M42 92h30"/><circle cx="116" cy="38" r="9"/></svg>';
@@ -3968,10 +4014,12 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     $("#duo").hidden = false;
     updateLock();
     renderDuo();
-    $("#fileCam").click();
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && !camBad) startCam();
+    else $("#fileCam").click();
   }
   function closeDuo() {
     if (!duo.on) return;
+    camWanted = false; stopCam();
     if (duo.cur) duoNext(false);
     duo.on = false;
     $("#duo").hidden = true;
@@ -4009,6 +4057,9 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       $("#duoHint").textContent = "Sur un cintre ou à plat, en entier, sur un fond uni si possible.";
       $("#duoShoot").innerHTML = duoIcon("cam") + (n ? "Pièce suivante" : "Photographier la pièce");
     }
+    var rt = duo.cam && duo.retake && st === "label";
+    if (rt) { $("#duoTitle").innerHTML = "<small>Reprise</small>La pièce"; $("#duoShoot").innerHTML = duoIcon("cam") + "Photographier la pièce"; }
+    $("#duoBack").textContent = rt ? "Garder la photo actuelle" : "Reprendre la photo de la pièce";
     $("#duoMore").hidden = st !== "more";
     $("#duoAddLab").disabled = $("#duoAddPiece").disabled = ph.length >= MAX_SHOTS;
     var showSkip = st === "label";
@@ -4114,13 +4165,18 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   $("#fileCam").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; if (f) duoAdd("piece", f); });
   $("#fileDuoLab").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; if (f) duoAdd("label", f); });
   $("#duoShoot").addEventListener("click", function () {
+    if (duo.cam) { duoCapture(); return; }
     if (duo.step === "more") duoNext(true);
     else $(duo.step === "label" ? "#fileDuoLab" : "#fileCam").click();
   });
   $("#duoAddLab").addEventListener("click", function () { $("#fileDuoLab").click(); });
   $("#duoAddPiece").addEventListener("click", function () { $("#fileCam").click(); });
   $("#duoSkip").addEventListener("click", function () { if (duo.cur && duo.step === "label") duoNext(false); });
-  $("#duoBack").addEventListener("click", function () { if (duo.cur && duo.step === "label") { duo.retake = true; $("#fileCam").click(); } });
+  $("#duoBack").addEventListener("click", function () {
+    if (!duo.cur || duo.step !== "label") return;
+    if (duo.cam) { duo.retake = !duo.retake; renderDuo(); return; }
+    duo.retake = true; $("#fileCam").click();
+  });
   $("#duoShots").addEventListener("click", function (e) {
     var b = e.target.closest("[data-drot]");
     if (!b || !duo.cur) return;
