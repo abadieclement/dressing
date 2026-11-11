@@ -256,6 +256,7 @@ body.selecting .fab, body.again-on .fab { display: none; }
 .xt .kk { position: absolute; left: 4px; top: 4px; padding: 2px 7px; border-radius: 8px; background: rgba(0, 0, 0, .55); color: #fff; font-size: 11px; font-weight: 700; }
 .xt .xb { position: absolute; bottom: 4px; width: 36px; height: 36px; border-radius: 11px; border: 0; background: rgba(0, 0, 0, .6); color: #fff; font-size: 18px; line-height: 1; display: grid; place-items: center; padding: 0; }
 .xt .xr { right: 44px; }
+.xt button.kk { border: 0; cursor: pointer; min-height: 30px; padding: 5px 9px; }
 .xt .xd { right: 4px; }
 @keyframes shim { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 .pair { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 10px; align-items: start; }
@@ -931,6 +932,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     <button class="btn" id="duoAddPiece" type="button">+ Autre photo de la pièce</button>
   </div>
   <button class="bigbtn" id="duoShoot" type="button"></button>
+  <button class="skip" id="duoBack" type="button">Reprendre la photo de la pièce</button>
   <button class="skip" id="duoSkip" type="button">Pas d'étiquette</button>
 </div>
 <div class="zoom" id="zoom" hidden><img alt=""><button class="iconbtn" id="zoomX" type="button" aria-label="Fermer"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
@@ -955,7 +957,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       <div class="pair">
         <div class="photobox">
           <span class="cap">La pièce</span>
-          <div class="vwrap"><div class="view" id="fView"></div><button class="rotov camov" id="btnCamP" type="button" aria-label="Remplacer la photo de la pièce" hidden><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg></button><button class="rotov" id="btnRotP" type="button" aria-label="Tourner la photo de la pièce" hidden>&#8635;</button></div>
+          <div class="vwrap"><div class="view" id="fView"></div><button class="rotov camov" id="btnCamP" type="button" aria-label="Changer la photo de la pièce" hidden><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg></button><button class="rotov" id="btnRotP" type="button" aria-label="Tourner la photo de la pièce" hidden>&#8635;</button></div>
           <div class="row-btns">
             <button class="btn small" id="btnShootItem" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Nouvelle photo</button>
             <button class="btn small" id="btnCut" type="button" hidden>Détourer</button>
@@ -964,7 +966,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
         </div>
         <div class="photobox">
           <span class="cap">L'étiquette</span>
-          <div class="vwrap"><div class="view" id="fView2"></div><button class="rotov camov" id="btnCamL" type="button" aria-label="Remplacer la photo de l'étiquette" hidden><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg></button><button class="rotov" id="btnRotL" type="button" aria-label="Tourner la photo de l'étiquette" hidden>&#8635;</button></div>
+          <div class="vwrap"><div class="view" id="fView2"></div><button class="rotov camov" id="btnCamL" type="button" aria-label="Changer la photo de l'étiquette" hidden><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg></button><button class="rotov" id="btnRotL" type="button" aria-label="Tourner la photo de l'étiquette" hidden>&#8635;</button></div>
           <div class="row-btns">
             <button class="btn small" id="btnShootLab" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-cam"/></svg>Nouvelle photo</button>
             <button class="btn small" id="btnLab" type="button" hidden><svg class="ic" aria-hidden="true"><use href="#i-image"/></svg>Galerie</button>
@@ -1327,14 +1329,24 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     (Array.isArray(v) ? v : []).forEach(function (x) { var p = pick(x, list); if (p && out.indexOf(p) < 0 && out.length < max) out.push(p); });
     return out;
   }
+  function fixCat(cat, kind, name) {
+    var t = String(kind || name || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (/chaussure|sneaker|basket|botte|bottine|mocassin|derby|richelieu|sandale|espadrille|loafer|tong/.test(t)) return "Chaussures";
+    if (/veste|blouson|manteau|doudoune|parka|trench|blazer|perfecto|bomber|coupe-vent|anorak|caban|surchemise/.test(t)) return "Vestes";
+    if (/pantalon|jean|short|chino|jogging|bermuda|jupe|legging/.test(t)) return "Bas";
+    if (/sweat|capuche|hoodie|pull|cardigan|col roule|gilet/.test(t)) return "Pulls";
+    if (/t-shirt|tee-shirt|tee shirt|debardeur|polo|chemise|\bmaillot\b|\btop\b/.test(t)) return "Hauts";
+    return cat;
+  }
   function clean(r) {
     r = r && typeof r === "object" && !Array.isArray(r) ? r : {};
+    var kind0 = cap(String(r.kind || "").trim().slice(0, 30));
     return {
       name: String(r.name || "").trim().slice(0, 80),
-      category: pick(r.category, CATS),
-      kind: cap(String(r.kind || "").trim().slice(0, 30)),
+      category: fixCat(pick(r.category, CATS), kind0, String(r.name || "")),
+      kind: kind0,
       colors: pickMany(r.colors, COLOR_NAMES, 3),
-      material: String(r.material || "").trim().slice(0, 40),
+      material: String(r.material || "").trim().slice(0, 90),
       seasons: pickMany(r.seasons, SEASONS, 4),
       tags: pickMany(r.tags, BASE_TAGS, 3),
       brand: String(r.brand || "").trim().slice(0, 40),
@@ -1371,11 +1383,11 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
       "Réponds uniquement avec un objet JSON de cette forme :\n" +
       '{"name": "nom court et précis en français, ex: Chemise Oxford bleu ciel", "category": "...", "kind": "...", "colors": ["..."], "material": "...", "seasons": ["..."], "tags": ["..."], "brand": "...", "size": "...", "basic": false, "value_min": 0, "value_max": 0}\n' +
       "Règles :\n" +
-      "- category : exactement une valeur parmi " + CATS.join(", ") + ".\n" +
+      "- category : exactement une valeur parmi " + CATS.join(", ") + ". Hauts = t-shirt, chemise, polo, débardeur. Pulls = pull, sweat, sweat à capuche, cardigan, gilet. Vestes = veste, manteau, blouson, doudoune.\n" +
       "- kind : le type précis de la pièce en un ou deux mots, en français, ex: T-shirt, Chemise, Jean, Chino, Sneakers, Doudoune, Écharpe.\n" +
-      "- colors : 1 à 3 valeurs parmi " + COLOR_NAMES.join(", ") + ", la dominante d'abord.\n" +
+      "- colors : 1 à 3 valeurs parmi " + COLOR_NAMES.join(", ") + ", la dominante d'abord. Seulement les couleurs vues de l'extérieur quand la pièce est portée : ignore la doublure, l'intérieur, les zips, les liserés et les petits logos. Une 2e couleur seulement si elle couvre une grande partie visible de la pièce (bloc de couleur, manches, empiècement).\n" +
       (hasLab
-        ? "- material : la composition lue sur l'étiquette, courte, ex: 100% Coton ou 80% Laine, 20% Polyamide. Si elle n'est pas lisible, la matière la plus probable.\n"
+        ? "- material : la composition lue sur l'étiquette, courte, ex: 100% Coton ou 80% Laine, 20% Polyamide. Recopie toutes les fibres en entier, sans couper un mot. Si elle n'est pas lisible, la matière la plus probable.\n"
         : "- material : la matière la plus probable en un ou deux mots, ou \"\" si tu n'es pas sûr.\n") +
       "- seasons : les saisons où la pièce se porte, parmi " + SEASONS.join(", ") + ".\n" +
       "- tags : 0 à 3 valeurs parmi " + BASE_TAGS.join(", ") + ".\n" +
@@ -1807,8 +1819,12 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     else if (a === "basics") startBasic();
     else if (a === "settings") { stFrom = "more"; setView("settings"); }
   });
-  var BUILD = { id: "2026.11.08-c", label: "8 novembre 2026" };
+  var BUILD = { id: "2026.11.11-c", label: "11 novembre 2026" };
   var CHANGES = [
+    "Couleurs lues sur l'extérieur de la pièce : la doublure n'est plus comptée",
+    "Ajout d'une pièce : plus d'étape de validation, l'étiquette enregistre la pièce, et on peut reprendre la photo de la pièce avant l'étiquette",
+    "Fiche : toucher une photo propose l'appareil photo ou la photothèque, et permet de dire si c'est la pièce ou l'étiquette",
+    "Ajout : catégorie corrigée d'après le type de pièce (un sweat à capuche reste un pull), composition lue en entier",
     "Tenues : calendrier du mois avec une vignette par jour",
     "Plus : quatre groupes, Réglages dans l'en-tête",
     "Dressing : cintres plus compacts, taille affichée seulement quand elle sort de l'ordinaire",
@@ -2149,7 +2165,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   function renderExtras() {
     if (!ed) return;
     $("#fExtras").innerHTML = ed.extras.map(function (x, i) {
-      return '<div class="xt"><img src="' + esc(srcOfX(x)) + '" alt="' + (x.k === "label" ? "Autre étiquette" : "Autre photo de la pièce") + '"><span class="kk">' + (x.k === "label" ? "Étiquette" : "Pièce") + '</span>' +
+      return '<div class="xt"><img src="' + esc(srcOfX(x)) + '" alt="' + (x.k === "label" ? "Autre étiquette" : "Autre photo de la pièce") + '"><button class="kk" type="button" data-xkind="' + i + '" aria-label="Changer en ' + (x.k === "label" ? "photo de la pièce" : "étiquette") + '">' + (x.k === "label" ? "Étiquette" : "Pièce") + ' &#8644;</button>' +
         '<button class="xb xr" type="button" data-xrot="' + i + '" aria-label="Tourner la photo">&#8635;</button>' +
         '<button class="xb xd" type="button" data-xdel="' + i + '" aria-label="Retirer la photo">&#10005;</button></div>';
     }).join("");
@@ -3982,7 +3998,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     }).join("");
     if (st === "label") {
       $("#duoTitle").innerHTML = "<small>2/2</small>L'étiquette";
-      $("#duoHint").textContent = "De près et nette. Marque, taille et composition sont parfois sur des faces différentes : tu pourras en ajouter.";
+      $("#duoHint").textContent = "De près et nette. La pièce s'enregistre dès cette photo. Une autre face d'étiquette ? Ajoute-la ensuite depuis la fiche.";
       $("#duoShoot").innerHTML = duoIcon("cam") + "Photographier l'étiquette";
     } else if (st === "more") {
       $("#duoTitle").textContent = "Pièce prête";
@@ -3997,6 +4013,7 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
     $("#duoAddLab").disabled = $("#duoAddPiece").disabled = ph.length >= MAX_SHOTS;
     var showSkip = st === "label";
     $("#duoSkip").classList.toggle("off", !showSkip); $("#duoSkip").tabIndex = showSkip ? 0 : -1;
+    $("#duoBack").classList.toggle("off", !showSkip); $("#duoBack").tabIndex = showSkip ? 0 : -1;
     $("#duoMsg").textContent = duo.aiNote || duo.err;
     $("#duoRecent").innerHTML = duo.recent.slice(0, 8).map(function (id) {
       var it = itemById(id), busy = inflight.has(id);
@@ -4022,15 +4039,25 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   }
   function duoAdd(kind, file) {
     if (!duo.on || !file) return;
+    var retake = duo.retake; duo.retake = false;
+    if (retake && kind === "piece" && duo.cur && duo.step === "label") {
+      var old = duo.cur.photos.filter(function (p) { return p.k === "piece"; })[0];
+      var idx = old ? duo.cur.photos.indexOf(old) : -1;
+      var np = { k: "piece", file: file, rot: 0, url: "", dead: false };
+      if (idx >= 0) { old.dead = true; if (old.url) URL.revokeObjectURL(old.url); duo.cur.photos[idx] = np; } else duo.cur.photos.unshift(np);
+      duo.err = "";
+      renderDuo();
+      duoPreview(np);
+      return;
+    }
     if (!duo.cur) { if (kind !== "piece") return; duo.cur = { photos: [] }; }
     if (duo.cur.photos.length >= MAX_SHOTS) return;
     duo.err = "";
     var ph = { k: kind, file: file, rot: 0, url: "", dead: false };
     duo.cur.photos.push(ph);
-    if (duo.step === "piece") duo.step = "label";
-    else if (duo.step === "label") duo.step = "more";
-    renderDuo();
-    duoPreview(ph);
+    if (duo.step === "piece") { duo.step = "label"; renderDuo(); duoPreview(ph); }
+    else if (duo.step === "label" && kind === "label") { duoNext(false); }
+    else { renderDuo(); duoPreview(ph); }
   }
   function duoNext(open) {
     if (!duo.cur) return;
@@ -4092,7 +4119,8 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   });
   $("#duoAddLab").addEventListener("click", function () { $("#fileDuoLab").click(); });
   $("#duoAddPiece").addEventListener("click", function () { $("#fileCam").click(); });
-  $("#duoSkip").addEventListener("click", function () { if (duo.cur && duo.step === "label") { duo.step = "more"; renderDuo(); } });
+  $("#duoSkip").addEventListener("click", function () { if (duo.cur && duo.step === "label") duoNext(false); });
+  $("#duoBack").addEventListener("click", function () { if (duo.cur && duo.step === "label") { duo.retake = true; $("#fileCam").click(); } });
   $("#duoShots").addEventListener("click", function (e) {
     var b = e.target.closest("[data-drot]");
     if (!b || !duo.cur) return;
@@ -4996,8 +5024,11 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   });
   $("#fExtras").addEventListener("click", async function (e) {
     if (!ed) return;
-    var cur = ed, r = e.target.closest("[data-xrot]"), d = e.target.closest("[data-xdel]"), im = e.target.closest("img");
-    if (d) {
+    var cur = ed, r = e.target.closest("[data-xrot]"), d = e.target.closest("[data-xdel]"), im = e.target.closest("img"), kb = e.target.closest("[data-xkind]");
+    if (kb) {
+      var kx = cur.extras[+kb.getAttribute("data-xkind")];
+      if (kx) { kx.k = kx.k === "label" ? "piece" : "label"; renderExtras(); }
+    } else if (d) {
       var i = +d.getAttribute("data-xdel"), x = cur.extras[i];
       if (!x) return;
       if (x.photo) cur.dropX.push(x.photo);
@@ -5026,10 +5057,35 @@ html[data-font="tech"] :is(h1, h2, h3, .big, .v) { letter-spacing: -0.03em; }
   function closeZoom() { $("#zoom").hidden = true; $("#zoom").querySelector("img").removeAttribute("src"); }
   $("#zoom").addEventListener("click", closeZoom);
   $("#fView").addEventListener("click", function (e) { var im = e.target.closest("img"); if (im) openZoom(im.src); });
-  $("#fView2").addEventListener("click", function (e) { var im = e.target.closest("img"); if (im) openZoom(im.src); else if ($("#fView2").classList.contains("none")) $("#fileLabCam").click(); });
-  $("#fView").addEventListener("click", function () { if ($("#fView").classList.contains("none")) $("#filePhotoCam").click(); });
-  $("#btnCamP").addEventListener("click", function () { $("#filePhotoCam").click(); });
-  $("#btnCamL").addEventListener("click", function () { $("#fileLabCam").click(); });
+  function photoMenu(slot) {
+    if (!ed) return;
+    var isP = slot === "p", has = isP ? !!(ed.preview || srcOf(ed)) : !!(ed.preview2 || srcOf2(ed));
+    var rows = [
+      ["cam", "cam", "Reprendre une photo", "Avec l'appareil photo."],
+      ["lib", "image", "Choisir dans la photothèque", "Une photo déjà prise."]
+    ];
+    if (has) rows.push(["swap", "tag", isP ? "C'est l'étiquette" : "C'est la pièce", isP ? "Cette photo passe dans l'étiquette." : "Cette photo passe dans la pièce."]);
+    var body = openDlg(isP ? "Photo de la pièce" : "Photo de l'étiquette");
+    body.innerHTML = '<div class="menu">' + rows.map(function (r) {
+      return '<button class="mrow" type="button" data-pm="' + r[0] + '"><span class="mi">' + ic(r[1]) + '</span><span class="mt"><b>' + esc(r[2]) + "</b><small>" + esc(r[3]) + "</small></span></button>";
+    }).join("") + "</div>";
+    body.onclick = function (e) {
+      var b = e.target.closest("[data-pm]"); if (!b) return;
+      var a = b.getAttribute("data-pm");
+      closeDlg();
+      if (a === "cam") $(isP ? "#filePhotoCam" : "#fileLabCam").click();
+      else if (a === "lib") $(isP ? "#filePhoto" : "#fileLab").click();
+      else if (a === "swap" && ed) {
+        if (ed.cut) { toast("Remets d'abord l'original de la pièce (bouton Détourer)."); return; }
+        ["photo", "thumb", "newBlob", "preview"].forEach(function (k) { var t = ed[k]; ed[k] = ed[k + "2"]; ed[k + "2"] = t; });
+        renderPhoto();
+      }
+    };
+  }
+  $("#fView2").addEventListener("click", function (e) { var im = e.target.closest("img"); if (im) openZoom(im.src); else if ($("#fView2").classList.contains("none")) photoMenu("l"); });
+  $("#fView").addEventListener("click", function () { if ($("#fView").classList.contains("none")) photoMenu("p"); });
+  $("#btnCamP").addEventListener("click", function () { photoMenu("p"); });
+  $("#btnCamL").addEventListener("click", function () { photoMenu("l"); });
   $("#btnDelete").addEventListener("click", function () {
     if (!ed) return;
     if (!ed.confirmDel) {
